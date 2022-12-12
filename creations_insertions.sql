@@ -16,7 +16,7 @@ CREATE TABLE Personnes(
 CREATE TABLE Classement(
    rang INT,
    victoires INT,
-   ratio REAL,
+   ratio REAL,clear
    id_personne INT NOT NULL,
    PRIMARY KEY(rang),
    FOREIGN KEY(id_personne) REFERENCES Personnes(id_personne)
