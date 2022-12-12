@@ -3,11 +3,9 @@ CREATE DATABASE smash;
 
 CREATE TABLE Personnes(
    id_personne INT,
-   nom VARCHAR(50),
-   prenom VARCHAR(50),
+   pseudo VARCHAR(50),
    age INT,
    sexe CHAR(1),
-   datenaissance DATE,
    pays VARCHAR(50),
    sponsor VARCHAR(100),
    PRIMARY KEY(id_personne)
@@ -199,3 +197,42 @@ INSERT INTO personnages values(83, 'Sephiroth', 29);
 INSERT INTO personnages values(84, 'Pyra/Mythra', 26);
 INSERT INTO personnages values(85, 'Kazuya', 39);
 INSERT INTO personnages values(86, 'Sora', 40);
+
+set datestyle to dmy;
+
+INSERT INTO personne values(1,'MKleo',21,'M','Mexique','T1');
+INSERT INTO personne values(2,'HungryBox',29,'États-Unis','T1');
+INSERT INTO personne values(3,'Capitaine',25,'France','IUT');
+INSERT INTO personne values(4,'Pacou',42,'F','France','IUT');
+INSERT INTO personne values(5,'Gudrun',20,'M','France','Yggdrazil');
+INSERT INTO personne values(6,'Akuma',20,'M','Angleterre','Cipher');
+INSERT INTO personne values(7,'Dany',26,'M','France','SQL');
+INSERT INTO personne values(8,'Moqmoq',14,'Espagne','Pokegang');
+INSERT INTO personne values(9,'Akvir',62,'France','Eco Smash');
+INSERT INTO personne values(10,'Pherax',24,'Irlande','SKUIZI');
+INSERT INTO personne values(11,'Maximum Propum',24,'M','Suède','ArmadaTeam');
+INSERT INTO personne values(12,'Moquouss',18,'M','France','Yggdrazil');
+INSERT INTO personne values(13,'Joyca',26,'M','Écosse','RhinoShield');
+INSERT INTO personne values(14,'Glutonny',27,'M','France','WaaaaTeam');
+INSERT INTO personne values(15,'Pataploup',19,'M','États-Unis','Xiaomi');
+INSERT INTO personne values(16,'Jeff',44,'M','États-Unis','Samsung');
+INSERT INTO personne values(17,'Armada',26,'M','Suisse','Iphone');
+INSERT INTO personne values(18,'Mango',34,'M','États-Unis','Sony');
+INSERT INTO personne values(20,'Mew2King',28,'M','Iran','Microsoft');
+INSERT INTO personne values(22,'Leffen',24,'M','États-Unis','Bethesda');
+INSERT INTO personne values(23,'Tayly',28,'M','Listembourg','Listembourg');
+INSERT INTO personne values(24,'Dusty',23,'M','États-Unis','Gouvernement');
+INSERT INTO personne values(25,'Craft',28,'M','Iran','Nintendo');
+INSERT INTO personne values(26,'Skuizi',28,'M','France','Squeezie');
+INSERT INTO personne values(27,'Kiyu',24,'M','France','SPA');
+INSERT INTO personne values(28,'Paulok',14,'M','Listembourg','Charal');
+INSERT INTO personne values(29,'Laupok',29,'M','France','Sega');
+INSERT INTO personne values(30,'Socko',19,'M','Listembourg','Samsung');
+INSERT INTO personne values(31,'Kennedy',28,'M','États-Unis','Gouvernement');
+INSERT INTO personne values(32,'Florian',20,'M','France','Looping');
+INSERT INTO personne values(33,'ArmadaJr',24,'M','Suède','Armada');
+INSERT INTO personne values(34,'FilthyBox',44,'M','Mexique','Wespeed');
+INSERT INTO personne values(35,'Pika1Queen',21,'F','Brésil','Hal Laboratory Inc.');
+INSERT INTO personne values(36,'Appol',25,'M','Chine','Bandai Namco');
+INSERT INTO personne values(37,'Son Jr',35,'M','Japon','Jump');
+INSERT INTO personne values(38,'Rick',42,'M','États-Unis','Cartoon Network');
