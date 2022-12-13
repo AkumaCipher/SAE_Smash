@@ -61,8 +61,8 @@ CREATE TABLE Matchs(
 CREATE TABLE Jouer_dans(
    id_joueur INT,
    id_match INT NOT NULL,
-   id_perso INT NOT NULL,
    id_personne INT NOT NULL,
+   id_perso INT NOT NULL,
    PRIMARY KEY(id_joueur),
    FOREIGN KEY(id_match) REFERENCES Matchs(id_match),
    FOREIGN KEY(id_perso) REFERENCES Personnages(id_perso),
@@ -471,3 +471,24 @@ insert into matchs values(117, 2, 1, round(random()*9)+1, 'Bo3');
 insert into matchs values(118, 0, 2, round(random()*9)+1, 'Bo3');
 insert into matchs values(119, 1, 2, round(random()*9)+1, 'Bo3');
 insert into matchs values(120, 2, 1, round(random()*9)+1, 'Bo3');
+
+insert into jouer_dans values(1  , 1  , 1 , 74);
+insert into jouer_dans values(2  , 1  , 5 , 24);
+insert into jouer_dans values(3  , 2  , 4 , 50);
+insert into jouer_dans values(4  , 2  , 30, 54);
+insert into jouer_dans values(5  , 3  , 24, 54);
+insert into jouer_dans values(6  , 3  , 25, 74);
+insert into jouer_dans values(7  , 4  , 2 , 20);
+insert into jouer_dans values(8  , 4  , 6 , 82);
+insert into jouer_dans values(9  , 5  , 3 , 86);
+insert into jouer_dans values(10 , 5  , 121 , 85);
+insert into jouer_dans values(11 , 6  , 14 , 82);
+insert into jouer_dans values(12 , 6  , 18 , 83);
+insert into jouer_dans values(13 , 7  , 28 , 82);
+insert into jouer_dans values(14 , 7  , 27 , 47);
+insert into jouer_dans values(15 , 8  , 31 , 45);
+insert into jouer_dans values(16 , 8  , 25 , 42);
+insert into jouer_dans values(17 , 9  , 17 , 74);
+insert into jouer_dans values(18 , 9  , 37 , 73);
+insert into jouer_dans values(19 , 10 , 47 , 23);
+insert into jouer_dans values(20 , 10 , 57 , 22);
