@@ -3,9 +3,12 @@ CREATE DATABASE smash;
 
 CREATE TABLE Personnes(
    id_personne INT,
-   pseudo VARCHAR(50),
+   nom VARCHAR(50),
+   prenom VARCHAR(50),
+   contact VARCHAR(50),
    age INT,
    sexe CHAR(1),
+   datenaissance DATE,
    pays VARCHAR(50),
    sponsor VARCHAR(100),
    PRIMARY KEY(id_personne)
@@ -14,7 +17,7 @@ CREATE TABLE Personnes(
 CREATE TABLE Classement(
    rang INT,
    victoires INT,
-   ratio REAL,clear
+   ratio REAL,
    id_personne INT NOT NULL,
    PRIMARY KEY(rang),
    FOREIGN KEY(id_personne) REFERENCES Personnes(id_personne)
@@ -34,9 +37,10 @@ CREATE TABLE Franchises(
 
 CREATE TABLE Historique(
    id_commande INT,
+   id_changement VARCHAR(50),
    instruction VARCHAR(50),
-   table_concernée VARCHAR(50),
-   date_save DATE,
+   table_concernee VARCHAR(50),
+   date_sauvegardee DATE,
    PRIMARY KEY(id_commande)
 );
 
@@ -52,22 +56,23 @@ CREATE TABLE Matchs(
    id_match INT,
    score_J1 INT,
    score_J2 INT,
-   id_carte INT NOT NULL,
    regles VARCHAR(50),
+   id_carte INT NOT NULL,
    PRIMARY KEY(id_match),
    FOREIGN KEY(id_carte) REFERENCES Cartes(id_carte)
 );
 
-CREATE TABLE Jouer_dans(
+CREATE TABLE Joueurs(
    id_joueur INT,
    id_match INT NOT NULL,
-   id_personne INT NOT NULL,
    id_perso INT NOT NULL,
+   id_personne INT NOT NULL,
    PRIMARY KEY(id_joueur),
    FOREIGN KEY(id_match) REFERENCES Matchs(id_match),
    FOREIGN KEY(id_perso) REFERENCES Personnages(id_perso),
    FOREIGN KEY(id_personne) REFERENCES Personnes(id_personne)
 );
+
 
 --- INSERTIONS ---
 INSERT INTO franchises values(1,  'Super Mario');
@@ -199,24 +204,26 @@ INSERT INTO personnages values(85, 'Kazuya', 39);
 INSERT INTO personnages values(86, 'Sora', 40);
 
 INSERT INTO personnes values(1,  'MKleo', 21, 'M', 'Mexique', 'T1');
-INSERT INTO personnes values(2,  'HungryBox', 29, 'Etats-Unis', 'T1');
-INSERT INTO personnes values(3,  'Capitaine', 25, 'France','IUT');
+INSERT INTO personnes values(2,  'HungryBox', 29, 'F','Etats-Unis', 'T1');
+INSERT INTO personnes values(3,  'Capitaine', 25,'M', 'France','IUT');
 INSERT INTO personnes values(4,  'Pacou',42,'F','France','IUT');
 INSERT INTO personnes values(5,  'Gudrun',20,'M','France','Yggdrazil');
 INSERT INTO personnes values(6,  'Akuma',20,'F','Angleterre','Cipher');
 INSERT INTO personnes values(7,  'Dany',26,'M','France','SQL');
-INSERT INTO personnes values(8,  'Moqmoq',14,'Espagne','Pokegang');
-INSERT INTO personnes values(9,  'Akvir',62,'France','Eco Smash');
-INSERT INTO personnes values(10, 'Pherax',24,'Irlande','SKUIZI');
+INSERT INTO personnes values(8,  'Moqmoq',14,'M','Espagne','Pokegang');
+INSERT INTO personnes values(9,  'Akvir',62,'F','France','Eco Smash');
+INSERT INTO personnes values(10, 'Pherax',24,'F','Irlande','SKUIZI');
 INSERT INTO personnes values(11, 'Maximum Propum',24,'M','Suède','ArmadaTeam');
 INSERT INTO personnes values(12, 'Moquouss',18,'M','France','Yggdrazil');
-INSERT INTO personnes values(13, 'Joyca',26,'M','Écosse','Rhinoshield');
+INSERT INTO personnes values(13, 'Joyca',26,'M','Ecosse','Rhinoshield');
 INSERT INTO personnes values(14, 'Glutonny',27,'M','France','WaaaaTeam');
 INSERT INTO personnes values(15, 'Pataploup',19,'M','Etats-Unis','Xiaomi');
 INSERT INTO personnes values(16, 'Jeff',44,'M','Etats-Unis','Samsung');
 INSERT INTO personnes values(17, 'Armada',26,'M','Suisse','Iphone');
 INSERT INTO personnes values(18, 'Mango',34,'M','Etats-Unis','Sony');
+INSERT INTO personnes values(19, 'MangoBanana', 35,'F','Etats-Unis','Sony');
 INSERT INTO personnes values(20, 'Mew2King',28,'F','Iran','Microsoft');
+INSERT INTO personnes values(21, 'JeanPeuPlu', 26,'M','Iran','Microsoft');
 INSERT INTO personnes values(22, 'Leffen',24,'F','Etats-Unis','Bethesda');
 INSERT INTO personnes values(23, 'Tayly',28,'M','Listembourg','Listembourg');
 INSERT INTO personnes values(24, 'Dusty',23,'M','Etats-Unis','Gouvernement');
@@ -239,10 +246,9 @@ INSERT INTO personnes values(40, 'Yde', 23, 'M', 'Suède', 'Tribe');
 INSERT INTO personnes values(41, 'Fishou', 33, 'M', 'France', 'Solary');
 INSERT INTO personnes values(42, 'Odemian', 27, 'M', 'France', 'Twitch');
 INSERT INTO personnes values(43, 'Amko', 18, 'F', 'Etats-Unis', 'Gabaret');
-INSERT INTO personnes values(44, 'Tpixel', 19, 'F', 'Chine', 'Bing chilling');
-INSERT INTO personnes values(43, 'Amko', 18, 'F', 'Etats-Unis', 'Gabaret');
 INSERT INTO personnes values(44, 'Yurika', 22, 'F', 'Inde', 'Oreo');
 INSERT INTO personnes values(45, 'Lolodrog', 23, 'M', 'France', 'Rhinoshield');
+INSERT INTO personnes values(46, 'ChianRelou', 34, 'M', 'France', 'Rhinoshield');
 INSERT INTO personnes values(47, 'Mily', 28, 'F', 'Etats-Unis', 'In shape');
 INSERT INTO personnes values(48, 'Koya', 18,'M','Japon','Jump');
 INSERT INTO personnes values(49, 'Russkiya', 25,'F','Japon','Jump');
@@ -252,15 +258,15 @@ INSERT INTO personnes values(52, 'Lix', 22,'F','France','Yggdrazil');
 INSERT INTO personnes values(53, 'Airika',21,'F','Angleterre','Cipher');
 INSERT INTO personnes values(54, 'Afton',25,'M','France','SQL');
 INSERT INTO personnes values(55, 'Crouton',22,'M','France','SQL');
-INSERT INTO personnes values(56, 'Shiron',34,'Espagne','Pokegang');
-INSERT INTO personnes values(57, 'DraxEZ',18,'Espagne','Pokegang');
-INSERT INTO personnes values(58, 'Deadlight',20,'Espagne','Pokegang');
-INSERT INTO personnes values(59, 'Artemisa',40,'France','Eco Smash');
-INSERT INTO personnes values(60, 'Hatsuko',34,'France','Eco Smash');
-INSERT INTO personnes values(61, 'Kehba',39,'France','Eco Smash');
-INSERT INTO personnes values(62, 'Menthys',30,'France','Eco Smash');
-INSERT INTO personnes values(63, 'Callate',32,'Irlande','SKUIZI');
-INSERT INTO personnes values(64, 'Kei',23,'Irlande','SKUIZI');
+INSERT INTO personnes values(56, 'Shiron',34,'F', 'Espagne','Pokegang');
+INSERT INTO personnes values(57, 'DraxEZ',18,'F', 'Espagne','Pokegang');
+INSERT INTO personnes values(58, 'Deadlight',20,'M','Espagne','Pokegang');
+INSERT INTO personnes values(59, 'Artemisa',40,'F','France','Eco Smash');
+INSERT INTO personnes values(60, 'Hatsuko',34,'M','France','Eco Smash');
+INSERT INTO personnes values(61, 'Kehba',39,'F','France','Eco Smash');
+INSERT INTO personnes values(62, 'Menthys',30,'M','France','Eco Smash');
+INSERT INTO personnes values(63, 'Callate',32,'F', 'Irlande','SKUIZI');
+INSERT INTO personnes values(64, 'Kei',23,'F', 'Irlande','SKUIZI');
 INSERT INTO personnes values(65, 'Mooon',28,'M','Suède','ArmadaTeam');
 INSERT INTO personnes values(66, 'DimitryOS',29,'M','Suède','ArmadaTeam');
 INSERT INTO personnes values(67, 'Relty',28,'F','Suède','ArmadaTeam');
@@ -297,7 +303,6 @@ INSERT INTO personnes values(97, 'Zen',19,'M','Listembourg','Charal');
 INSERT INTO personnes values(98, 'Bloodyvortex',25,'M','Listembourg','Charal');
 INSERT INTO personnes values(99, 'Poot',34,'M','France','Sega');
 INSERT INTO personnes values(100, 'Frozen',31,'M','France','Sega');
-INSERT INTO personnes values(100, 'Genesis',30,'F','France','Looping');
 INSERT INTO personnes values(101, 'Florian',33,'F','France','Looping');
 INSERT INTO personnes values(102, 'Niemman',38,'F','Mexique','Wespeed');
 INSERT INTO personnes values(103, 'Shirli',38,'M','Mexique','Wespeed');
@@ -515,7 +520,7 @@ insert into jouer_dans values(37  , 19  , 45  , 45);
 insert into jouer_dans values(38  , 19  , 23  , 79);
 insert into jouer_dans values(39  , 20  , 115 , 10);
 insert into jouer_dans values(40  , 20  , 120 , 54);
-insert into jouer_dans values(41  , 21  , 65 ,  80);
+insert into jouer_dans values(41  , 21  , 65  , 80);
 insert into jouer_dans values(42  , 21  , 53  , 43);
 insert into jouer_dans values(43  , 22  , 123 , 8 );
 insert into jouer_dans values(44  , 22  , 47  , 16);
