@@ -47,9 +47,9 @@ CREATE TABLE tierlist(
    id_perso INT,
    nom VARCHAR(50),
    ratio REAL,
-   nb_victoire VARCHAR(50),
-   nb_defaite INT,
-   nb_combat INT,
+   nb_victoire REAL,
+   nb_defaite REAL,
+   nb_combat REAL,
    PRIMARY KEY(id_rang)
 );
 
