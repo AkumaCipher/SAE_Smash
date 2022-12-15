@@ -1,5 +1,5 @@
---- CREATE DATABASE --- 
-CREATE DATABASE smash;
+--- CREATE DATABASE ---
+--- CREATE DATABASE smash; ---
 
 --- CREATE TABLE ---
 CREATE TABLE personne(
