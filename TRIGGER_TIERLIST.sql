@@ -72,11 +72,11 @@ begin
 
                 update tierlist set nb_victoire = nb_victoire + sco_j1 where id_perso = joueur1_p;
                 update tierlist set nb_defaite = nb_defaite + sco_j2 where id_perso = joueur1_p;
+                update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur1_p;
+                update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur1_p;
 
                 select into winrate nb_victoire/nb_combat*100 from tierlist where nb_victoire > 0 and id_perso=joueur1_p;
                 update tierlist set ratio = round(winrate, 1) where id_perso = joueur1_p;
-                update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur1_p;
-                update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur1_p;
 
                 select into joueur2 id_joueur from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
 
@@ -84,11 +84,11 @@ begin
 
                 update tierlist set nb_victoire = nb_victoire + sco_j1 where id_perso = joueur2_p;
                 update tierlist set nb_defaite = nb_defaite + sco_j2 where id_perso = joueur2_p;
-
-                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_victoire > 0 and id_perso=joueur1_p;
-                update tierlist set ratio = round(winrate, 1) where id_perso = joueur1_p
                 update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur2_p;
                 update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur2_p;
+
+                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_victoire > 0 and id_perso=joueur2_p;
+                update tierlist set ratio = round(winrate, 1) where id_perso = joueur2_p;
 
                 raise notice 'joueur1: %, perso1: %', joueur1, joueur1_p;
                 
