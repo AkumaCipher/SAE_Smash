@@ -42,6 +42,17 @@ CREATE TABLE historique(
    PRIMARY KEY(id_commande)
 );
 
+CREATE TABLE tierlist(
+   id_rang INT,
+   id_perso INT,
+   nom VARCHAR(50),
+   ratio REAL,
+   nb_victoire VARCHAR(50),
+   nb_defaite INT,
+   nb_combat INT,
+   PRIMARY KEY(id_rang)
+);
+
 CREATE TABLE personnage(
    id_perso INT,
    nom VARCHAR(50),
