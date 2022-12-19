@@ -133,6 +133,38 @@ begin
 end;
 $$ language plpgsql; */
 
+
+create or replace function tri2() returns void as $$
+
+declare
+    nv_place integer := 0;
+    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
+    val integer;
+    r integer;
+    nb_place integer;
+
+begin
+    select into nb_place max(id_rang) from tierlist;
+    nb_place := nb_place + 1;
+    open cur;
+    loop
+        fetch cur into r, val;
+        exit when not found;
+
+        nb_place := nb_place + 1;
+        nv_place := nv_place + 1;
+        update tierlist set id_rang = nb_place where id_rang = nv_place;
+        update tierlist set id_rang = nv_place where id_rang = r;
+        update tierlist set id_rang = r where id_rang = nb_place;
+
+    end loop;
+    close cur;
+end;
+$$ language plpgsql;
+
+--- Et la en gros je refais la même fonction qui sera utilisé et elle utilise celle d'avant,
+--- Ce qui fait la combinaison des deux fonctions et ça marche, j'ai testé :p
+
 create or replace function tri()
 returns void as $$
 
@@ -155,13 +187,13 @@ begin
         nv_place := nv_place + 1;
         update tierlist set id_rang = nb_place where id_rang = nv_place;
         update tierlist set id_rang = nv_place where id_rang = r;
-        update tierlist set id_rang = r where id_rang = nb_place;
+        --- update tierlist set id_rang = r where id_rang = nb_place; --- 
         
     end loop;
     close cur;
+    perform tri2();
 end;
 $$ language plpgsql;
-
 
 
 /* create or replace function tri()
