@@ -1,5 +1,5 @@
---- INSERTIONS ---
-create or replace function insert_tl()
+--- INSERTION TIERLIST ---
+create or replace function insert_tierlist()
 returns trigger as $$
 
 declare
@@ -26,15 +26,15 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger insert_tierlist
+create trigger insert
 after insert or delete on personnage
 for each row
-execute procedure insert_tl();
+execute procedure insert_tierlist();
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 
 --- INCREMENTATION STATS DE COMBAT ---
-create or replace function vic_def()
+create or replace function stats_tierlist()
 returns trigger as $$
 
 declare
@@ -51,7 +51,7 @@ declare
 
     nb_joueur integer;
 
-    winrate integer;
+    winrate real;
 
 begin
     if(TG_OP='INSERT')
@@ -66,6 +66,8 @@ begin
             select into nb_joueur count(*) from jouer_dans where id_combat = new.id_combat;
             if(nb_joueur=2)
             then
+
+                --- j1
                 select into joueur1 id_joueur from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur limit 1;
 
                 select into joueur1_p id_perso from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur limit 1;
@@ -75,9 +77,10 @@ begin
                 update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur1_p;
                 update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur1_p;
 
-                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_victoire > 0 and id_perso=joueur1_p;
-                update tierlist set ratio = round(winrate, 1) where id_perso = joueur1_p;
+                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_combat > 0 and id_perso=joueur1_p;
+                update tierlist set ratio = winrate where id_perso = joueur1_p;
 
+                --- j2
                 select into joueur2 id_joueur from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
 
                 select into joueur2_p id_perso from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
@@ -87,22 +90,109 @@ begin
                 update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur2_p;
                 update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur2_p;
 
-                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_victoire > 0 and id_perso=joueur2_p;
-                update tierlist set ratio = round(winrate, 1) where id_perso = joueur2_p;
-
-                raise notice 'joueur1: %, perso1: %', joueur1, joueur1_p;
-                
-                raise notice 'joueur2: %, perso1: %', joueur2, joueur2_p;
+                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_combat > 0 and id_perso=joueur2_p;
+                update tierlist set ratio = winrate where id_perso = joueur2_p;
             end if;
             return new;
     end if;
 end;
 $$language plpgsql;
 
-create trigger test
+create trigger stats
 after insert on jouer_dans
 for each row
-execute procedure vic_def();
---- select c.id_combat, c.score_j1, c.score_j2, jd.id_joueur, jd.id_perso, jd.id_personne from combat as c join jouer_dans as jd on c.id_combat = jd.id_combat where c.id_combat = 1; 
+execute procedure stats_tierlist();
 
---- insert into jouer_dans values (260, 3, 120, 22);
+
+--- TRI DE LA TIERLIST ---
+/* create or replace function tri()
+returns void as $$
+
+declare
+    nv_place integer := 0;
+    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
+    val integer;
+    r integer;
+    nb_place integer;
+
+begin
+    select into nb_place max(id_rang) from tierlist;
+    open cur;
+    loop
+        fetch cur into r, val;
+        exit when not found;
+
+        raise notice 'rang: %, val: %', r, val;
+        nb_place := nb_place + 1;
+        nv_place := nv_place + 1;
+        update tierlist set id_rang = nb_place where id_rang = nv_place;
+        update tierlist set id_rang = nv_place where id_rang = r;
+        update tierlist set id_rang = r where id_rang = nb_place;
+    end loop;
+    close cur;
+end;
+$$ language plpgsql; */
+
+create or replace function tri()
+returns void as $$
+
+declare
+    nv_place integer := 0;
+    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
+    val integer;
+    r integer;
+    nb_place integer;
+
+begin
+    select into nb_place max(id_rang) from tierlist;
+    nb_place := nb_place + 1;
+    open cur;
+    loop
+        fetch cur into r, val;
+        exit when not found;
+     
+        nb_place := nb_place + 1;
+        nv_place := nv_place + 1;
+        update tierlist set id_rang = nb_place where id_rang = nv_place;
+        update tierlist set id_rang = nv_place where id_rang = r;
+        update tierlist set id_rang = r where id_rang = nb_place;
+        
+    end loop;
+    close cur;
+end;
+$$ language plpgsql;
+
+
+
+/* create or replace function tri()
+returns void as $$
+
+declare
+    nv_place integer := 1;
+    max_ratio integer :=  101;
+    cur refcursor;
+    r integer;
+    nb_place integer;
+    nb_place_debut integer;
+    compt integer := 0;
+
+begin
+    select into nb_place_debut max(id_rang) from tierlist;
+    nb_place := nb_place_debut+1;
+    while compt < nb_place_debut loop
+        
+        select into max_ratio max(ratio) from tierlist where ratio<max_ratio;
+        select into r id_rang from tierlist where ratio = max_ratio and id_rang > nv_place limit 1;
+        
+            
+            update tierlist set id_rang = nb_place where id_rang = nv_place;
+            update tierlist set id_rang = nv_place where id_rang = r;
+            nb_place := nb_place + 1;
+            nv_place := nv_place + 1;
+            compt := compt + 1;
+
+    end loop;
+end;
+$$ language plpgsql;
+
+*/
