@@ -6,18 +6,20 @@ Notre structure permet aux joueurs le souhaitant, de se mettre en relation et de
 
 ## <span style="color:grey"> Présentation du projet. </span>
 
-Nous avons décidé de faire un classement des personnages : la table *tierlist*, recensant le nombre de combats combattus par le personnage, son nombre de victoires et de défaites, permettant ainsi d'indiquer un pourcentage de victoire : le ratio. <br>
+Nous avons décidé de faire un classement des personnages : la table *tierlist*, recensant le nombre de combats combattus par le personnage, son nombre de victoires et de défaites, permettant ainsi d'indiquer un pourcentage de victoire : le ratio.
+En plus du classement des personnages, la base de données possède bien sûr un classement des personnes : la table *classement*. 
+<br>
 Le ratio est très important car il permet de classer les différents personnages, grâce à leur *rang*. Ce rang étant très représentatif aux yeux de nos joueurs moins expérimentés, qui voudraient choisir un nouveau personnage à jouer. <br>
 Nous avons également opté pour un historique de commande : la table *historique*, permettant de connaître tout les changements effectués sur notre base de données. <br>
-*Attention* les changements effectués sur les tables "automatisées" (historique, tierlist) ne sont pas pris en compte, seuls les changements manuels sont enregistrés.
+*Attention* les changements effectués sur les tables "automatisées" (historique, tierlist, classement) ne sont pas pris en compte, seuls les changements manuels sont enregistrés.
 
 ## <span style="color:grey"> Notre équipe. </span>
 
 Numéro d'équipe : **4**.
 
-Chef de Projet : **Paul Hurdebourcq**.
+Chef de Projet : **Paul Hurdebourcq [BUT2-TD2-TPD]**.
 
-Collaborateur : **Théo Massias**.
+Collaborateur : **Théo Massias [BUT2-TD2-TPD]**.
 
 ## <span style="color:red"> Comment installer la base de données ? </span>
 
@@ -31,7 +33,7 @@ N'oubliez pas de vous "déplacer" dans votre nouvelle base de données :
 \c smash
 ```
 
-Une fois cela fait, il faut maintenant insérer les données dans cette base. Pour cela, vous pouvez tout simplement copier coller les commandes à l'intérieur, ou alors, si vous êtes sur un **environnement linux**, vous pouvez faire ceci :
+Une fois cela fait, il faut maintenant insérer les données dans cette base. Pour cela, vous pouvez tout simplement copier coller l'intégralité du fichier **INSERT_CREATE_COMPLET.sql**, ou alors, si vous êtes sur un **environnement linux**, vous pouvez faire ceci :
 
 <ol>
 <li>Faire un clic-droit tout en appuyant sur la touche SHIFT sur le dossier comportant les fichiers sql.</li>
@@ -44,3 +46,10 @@ Une fois cela fait, il faut maintenant insérer les données dans cette base. Po
 \i /mnt/c/Users/petit/Desktop/Cours/SAEs/SAE_SQL_Smash/SAE_Smash/CREATE_TABLE.sql
 ```
 
+<img src='./img/logo.jpg'>
+
+<img src='./img/roster.png'>
+
+<img src='./img/mkleo.jpg'>
+
+<img src='./img/fight.jpg'>

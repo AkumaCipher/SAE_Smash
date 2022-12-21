@@ -1,6 +1,3 @@
---- CREATE DATABASE ---
---- CREATE DATABASE smash; ---
-
 --- CREATE TABLE ---
 CREATE TABLE personne(
    id_personne INT,
@@ -10,6 +7,17 @@ CREATE TABLE personne(
    pays VARCHAR(50),
    sponsor VARCHAR(100),
    PRIMARY KEY(id_personne)
+);
+
+CREATE TABLE classement(
+   id_rang INT,
+   id_personne INT,
+   pseudo VARCHAR(50),
+   ratio REAL,
+   nb_victoire REAL,
+   nb_defaite REAL,
+   nb_combat REAL,
+   PRIMARY KEY(id_rang)
 );
 
 CREATE TABLE carte(
@@ -47,7 +55,7 @@ CREATE TABLE tierlist(
 CREATE TABLE personnage(
    id_perso INT,
    nom VARCHAR(50),
-   id_franchise INT NOT NULL,
+   id_franchise INT,
    PRIMARY KEY(id_perso),
    FOREIGN KEY(id_franchise) REFERENCES franchise(id_franchise)
 );

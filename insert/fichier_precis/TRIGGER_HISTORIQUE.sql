@@ -2,6 +2,10 @@
 create or replace function op_personne()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table personne dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -42,6 +46,10 @@ execute procedure op_personne();
 --- Historique personnage ---
 create or replace function op_personnage()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table personnage dans la table historique.
+*/
 
 declare
     id integer;
@@ -84,6 +92,10 @@ execute procedure op_personnage();
 create or replace function op_jouer_dans()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table jouer_dans dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -124,6 +136,10 @@ execute procedure op_jouer_dans();
 --- Historique franchise ---
 create or replace function op_franchise()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table franchise dans la table historique.
+*/
 
 declare
     id integer;
@@ -166,6 +182,10 @@ execute procedure op_franchise();
 create or replace function op_carte()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table carte dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -206,6 +226,10 @@ execute procedure op_carte();
 --- Historique combat ---
 create or replace function op_combat()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table combat dans la table historique.
+*/
 
 declare
     id integer;

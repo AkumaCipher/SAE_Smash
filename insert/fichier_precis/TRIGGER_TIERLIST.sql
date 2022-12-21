@@ -2,6 +2,12 @@
 create or replace function insert_tierlist()
 returns trigger as $$
 
+/* 
+    Le but de cette fonction est de remplir la table tierlist en même temps que la table personnage.
+    Inutile de répéter les insert deux fois, c'est pourquoi cette fonction existe, elle est plus "propre" à nos yeux.
+    Cela va de soi, si on souhaite retirer un personnage de la table personnage, il se retire de lui-même de la table tierlist.
+*/
+
 declare
     id integer;
 
@@ -36,6 +42,13 @@ execute procedure insert_tierlist();
 --- TRI DE LA TIERLIST ---
 create or replace function tri_tierlist()
 returns void as $$
+
+/*
+    Cette fonction sera utilisée dans un trigger par la suite, elle sert à trier la table tierlist.
+    Le tri se fait par rapport à la clé primaire id_rang.
+    Cette clé représente la place du personnage par rapport aux autres, id_rang = 1 est donc le personnage le plus perfomant et viable.
+    Les personnages sont triés en fonction de leur ratio de victoire, plus le ratio est proche de 100, plus le personnage est bien classé.
+*/
 
 declare
     nv_place integer := 0;
@@ -78,6 +91,12 @@ $$ language plpgsql;
 --- INCREMENTATION STATS DE COMBAT ---
 create or replace function stats_tierlist()
 returns trigger as $$
+
+/*
+    Cette fonction va utiliser la fonction ci-dessus : tri_tierlist.
+    Elle a pour but d'incrémenter les différentes colonnes concernant les combats de la table tierlist.
+    -> nb_combat, nb_victoire, nb_defaite, et ratio.
+*/
 
 declare
     perso integer;
