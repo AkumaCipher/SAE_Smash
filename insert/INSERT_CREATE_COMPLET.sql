@@ -210,8 +210,8 @@ begin
 
                 select into joueur2_p id_perso from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
 
-                update tierlist set nb_victoire = nb_victoire + sco_j1 where id_perso = joueur2_p;
-                update tierlist set nb_defaite = nb_defaite + sco_j2 where id_perso = joueur2_p;
+                update tierlist set nb_victoire = nb_victoire + sco_j2 where id_perso = joueur2_p;
+                update tierlist set nb_defaite = nb_defaite + sco_j1 where id_perso = joueur2_p;
                 update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur2_p;
                 update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur2_p;
 
@@ -437,8 +437,8 @@ begin
 
                 select into joueur2_p id_personne from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
 
-                update classement set nb_victoire = nb_victoire + sco_j1 where id_personne = joueur2_p;
-                update classement set nb_defaite = nb_defaite + sco_j2 where id_personne = joueur2_p;
+                update classement set nb_victoire = nb_victoire + sco_j2 where id_personne = joueur2_p;
+                update classement set nb_defaite = nb_defaite + sco_j1 where id_personne = joueur2_p;
                 update classement set nb_combat = nb_combat + sco_j1 where id_personne=joueur2_p;
                 update classement set nb_combat = nb_combat + sco_j2 where id_personne=joueur2_p;
 
