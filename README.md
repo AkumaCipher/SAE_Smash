@@ -1,4 +1,4 @@
-# <span style="color:lightcoral"> Smash'em All! </span>
+# <span style="color:lightcoral"> Smash'Em All! </span>
 
 Pour la SAE 2.4 de l'IUT, nous avons décidé de proposer une structure accueillant des combats compétitifs sur le jeu **Super Smash Bros. Ultimate**. <br>
 Ce jeu de combat propose un total de *86* personnages jouables issus de *40* franchises mondialement connues.
@@ -45,11 +45,3 @@ Une fois cela fait, il faut maintenant insérer les données dans cette base. Po
 ```sql
 \i /mnt/c/Users/petit/Desktop/Cours/SAEs/SAE_SQL_Smash/SAE_Smash/CREATE_TABLE.sql
 ```
-
-<img src='./img/logo.jpg'>
-
-<img src='./img/roster.png'>
-
-<img src='./img/mkleo.jpg'>
-
-<img src='./img/fight.jpg'>
