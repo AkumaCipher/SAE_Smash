@@ -12,15 +12,6 @@ CREATE TABLE personne(
    PRIMARY KEY(id_personne)
 );
 
-CREATE TABLE classement(
-   rang INT,
-   victoires INT,
-   ratio REAL,
-   id_personne INT NOT NULL,
-   PRIMARY KEY(rang),
-   FOREIGN KEY(id_personne) REFERENCES personne(id_personne)
-);
-
 CREATE TABLE carte(
    id_carte INT,
    nom VARCHAR(100),

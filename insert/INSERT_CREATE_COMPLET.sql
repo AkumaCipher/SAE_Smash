@@ -1,3 +1,224 @@
+--- CREATE TABLE ---
+CREATE TABLE personne(
+   id_personne INT,
+   pseudo VARCHAR(50),
+   age INT,
+   sexe CHAR(1),
+   pays VARCHAR(50),
+   sponsor VARCHAR(100),
+   PRIMARY KEY(id_personne)
+);
+
+CREATE TABLE carte(
+   id_carte INT,
+   nom VARCHAR(100),
+   PRIMARY KEY(id_carte)
+);
+
+CREATE TABLE franchise(
+   id_franchise INT,
+   nom VARCHAR(100),
+   PRIMARY KEY(id_franchise)
+);
+
+CREATE TABLE historique(
+   id_commande INT,
+   id_changement VARCHAR(50),
+   instruction VARCHAR(50),
+   table_concernee VARCHAR(50),
+   date_sauvegardee DATE,
+   PRIMARY KEY(id_commande)
+);
+
+CREATE TABLE tierlist(
+   id_rang INT,
+   id_perso INT,
+   nom VARCHAR(50),
+   ratio REAL,
+   nb_victoire REAL,
+   nb_defaite REAL,
+   nb_combat REAL,
+   PRIMARY KEY(id_rang)
+);
+
+CREATE TABLE personnage(
+   id_perso INT,
+   nom VARCHAR(50),
+   id_franchise INT NOT NULL,
+   PRIMARY KEY(id_perso),
+   FOREIGN KEY(id_franchise) REFERENCES franchise(id_franchise)
+);
+
+CREATE TABLE combat(
+   id_combat INT,
+   id_carte INT,
+   score_J1 INT,
+   score_J2 INT,
+   format VARCHAR(50),
+   PRIMARY KEY(id_combat),
+   FOREIGN KEY(id_carte) REFERENCES carte(id_carte)
+);
+
+CREATE TABLE jouer_dans(
+   id_joueur INT,
+   id_combat INT NOT NULL,
+   id_personne INT NOT NULL,
+   id_perso INT NOT NULL,
+   PRIMARY KEY(id_joueur),
+   FOREIGN KEY(id_combat) REFERENCES combat(id_combat),
+   FOREIGN KEY(id_perso) REFERENCES personnage(id_perso),
+   FOREIGN KEY(id_personne) REFERENCES personne(id_personne)
+);
+
+--- INSERTION TIERLIST ---
+create or replace function insert_tierlist()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_rang)+1) from tierlist;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then
+            insert into tierlist values(id, new.id_perso, new.nom, 0, 0, 0, 0);
+            return new;
+    end if;
+
+    if(TG_OP='DELETE')
+        then
+            delete from tierlist where id_perso = old.id_perso;
+            return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger insert
+after insert or delete on personnage
+for each row
+execute procedure insert_tierlist();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- TRI DE LA TIERLIST ---
+create or replace function tri_tierlist()
+returns void as $$
+
+declare
+    nv_place integer := 0;
+    cur refcursor; 
+    val integer;
+    r integer;
+    nb_place integer := 0;
+    nb_place_debut integer := 0;
+    i integer := 0;
+
+begin
+    select into nb_place_debut max(id_rang) from tierlist;
+    nb_place := nb_place_debut;
+    loop
+    exit when i=nb_place_debut;
+        nb_place := nb_place + 1;
+        i := i + 1;
+        update tierlist set id_rang = nb_place where id_rang = i; 
+    end loop;
+
+    select into nb_place count(id_rang) from tierlist;
+    i := 0;
+
+    open cur for select id_rang, ratio from tierlist order by ratio desc;
+    loop
+        fetch cur into r, val;
+        exit when not found;
+     
+        i := i + 1;
+        nv_place := nv_place + 1;
+        update tierlist set id_rang = nv_place where id_rang = r;
+        
+    end loop;
+    close cur; 
+end;
+$$ language plpgsql;
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- INCREMENTATION STATS DE COMBAT ---
+create or replace function stats_tierlist()
+returns trigger as $$
+
+declare
+    perso integer;
+    nb_c integer;
+
+    joueur1 integer;
+    joueur1_p integer;
+    sco_j1 integer;
+
+    joueur2 integer;
+    joueur2_p integer;
+    sco_j2 integer;
+
+    nb_joueur integer;
+
+    winrate real;
+
+begin
+    if(TG_OP='INSERT')
+        then
+
+            --- stockage du score de chaque joueur
+            select into sco_j1 score_j1 from combat where id_combat = new.id_combat;
+            select into sco_j2 score_j2 from combat where id_combat = new.id_combat;
+
+            --- ajout du nombre de combat gagnés et perdus pour chaque personnage
+            --- SEULEMENT quand un match comporte bien 2 joueurs
+            select into nb_joueur count(*) from jouer_dans where id_combat = new.id_combat;
+            if(nb_joueur=2)
+            then
+
+                --- j1
+                select into joueur1 id_joueur from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur limit 1;
+
+                select into joueur1_p id_perso from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur limit 1;
+
+                update tierlist set nb_victoire = nb_victoire + sco_j1 where id_perso = joueur1_p;
+                update tierlist set nb_defaite = nb_defaite + sco_j2 where id_perso = joueur1_p;
+                update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur1_p;
+                update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur1_p;
+
+                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_combat > 0 and id_perso=joueur1_p;
+                update tierlist set ratio = winrate where id_perso = joueur1_p;
+
+                --- j2
+                select into joueur2 id_joueur from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
+
+                select into joueur2_p id_perso from jouer_dans as jd join combat as c on jd.id_combat = c.id_combat where c.id_combat = new.id_combat order by id_joueur desc limit 1;
+
+                update tierlist set nb_victoire = nb_victoire + sco_j1 where id_perso = joueur2_p;
+                update tierlist set nb_defaite = nb_defaite + sco_j2 where id_perso = joueur2_p;
+                update tierlist set nb_combat = nb_combat + sco_j1 where id_perso=joueur2_p;
+                update tierlist set nb_combat = nb_combat + sco_j2 where id_perso=joueur2_p;
+
+                select into winrate nb_victoire/nb_combat*100 from tierlist where nb_combat > 0 and id_perso=joueur2_p;
+                update tierlist set ratio = winrate where id_perso = joueur2_p;
+            end if;
+            perform tri_tierlist();
+            return new;
+    end if;
+end;
+$$language plpgsql;
+
+create trigger stats
+after insert on jouer_dans
+for each row
+execute procedure stats_tierlist();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
 --- personne ---
 INSERT INTO personne values(1  , 'MKleo'         , 21, 'M', 'Mexique'    , 'T1'                 );
 INSERT INTO personne values(2  , 'HungryBox'     , 29, 'F', 'Etats-Unis' , 'T1'                 );
@@ -579,73 +800,318 @@ insert into jouer_dans values(167, 84 , 97 , 71);
 insert into jouer_dans values(168, 84 , 93 , 19);
 insert into jouer_dans values(169, 85 , 51 , 21);
 insert into jouer_dans values(170, 85 , 41 , 17);
-insert into jouer_dans values(171, 86 , 42 , round(random()*86)+1);
-insert into jouer_dans values(172, 86 , 46 , round(random()*86)+1);
-insert into jouer_dans values(173, 87 , 1  , round(random()*86)+1);
-insert into jouer_dans values(174, 87 , 13 , round(random()*86)+1);
-insert into jouer_dans values(175, 88 , 15 , round(random()*86)+1);
-insert into jouer_dans values(176, 88 , 17 , round(random()*86)+1);
-insert into jouer_dans values(177, 89 , 19 , round(random()*86)+1);
-insert into jouer_dans values(178, 89 , 22 , round(random()*86)+1);
-insert into jouer_dans values(179, 90 , 32 , round(random()*86)+1);
-insert into jouer_dans values(180, 90 , 34 , round(random()*86)+1);
-insert into jouer_dans values(181, 91 , 36 , round(random()*86)+1);
-insert into jouer_dans values(182, 91 , 38 , round(random()*86)+1);
-insert into jouer_dans values(183, 92 , 48 , round(random()*86)+1);
-insert into jouer_dans values(184, 92 , 54 , round(random()*86)+1);
-insert into jouer_dans values(185, 93 , 55 , round(random()*86)+1);
-insert into jouer_dans values(186, 93 , 58 , round(random()*86)+1);
-insert into jouer_dans values(187, 94 , 60 , round(random()*86)+1);
-insert into jouer_dans values(188, 94 , 62 , round(random()*86)+1);
-insert into jouer_dans values(189, 95 , 63 , round(random()*86)+1);
-insert into jouer_dans values(190, 95 , 70 , round(random()*86)+1);
-insert into jouer_dans values(191, 96 , 80 , round(random()*86)+1);
-insert into jouer_dans values(192, 96 , 83 , round(random()*86)+1);
-insert into jouer_dans values(193, 97 , 88 , round(random()*86)+1);
-insert into jouer_dans values(194, 97 , 95 , round(random()*86)+1);
-insert into jouer_dans values(195, 98 , 110, round(random()*86)+1);
-insert into jouer_dans values(196, 98 , 111, round(random()*86)+1);
-insert into jouer_dans values(197, 99 , 113, round(random()*86)+1);
-insert into jouer_dans values(198, 99 , 101, round(random()*86)+1);
-insert into jouer_dans values(199, 100, 103, round(random()*86)+1);
-insert into jouer_dans values(200, 100, 116, round(random()*86)+1);
-insert into jouer_dans values(201, 101, 117, round(random()*86)+1);
-insert into jouer_dans values(202, 101, 125, round(random()*86)+1);
-insert into jouer_dans values(203, 102, 126, round(random()*86)+1);
-insert into jouer_dans values(204, 102, 129, round(random()*86)+1);
-insert into jouer_dans values(205, 103, 130, round(random()*86)+1);
-insert into jouer_dans values(206, 103, 132, round(random()*86)+1);
-insert into jouer_dans values(207, 104, 134, round(random()*86)+1);
-insert into jouer_dans values(208, 104, 135, round(random()*86)+1);
-insert into jouer_dans values(209, 105, 137, round(random()*86)+1);
-insert into jouer_dans values(210, 105, 139, round(random()*86)+1);
-insert into jouer_dans values(211, 106, 143, round(random()*86)+1);
-insert into jouer_dans values(212, 106, 144, round(random()*86)+1);
-insert into jouer_dans values(213, 107, 116, round(random()*86)+1);
-insert into jouer_dans values(214, 107, 116, round(random()*86)+1);
-insert into jouer_dans values(215, 108, 120, round(random()*86)+1);
-insert into jouer_dans values(216, 108, 8  , round(random()*86)+1);
-insert into jouer_dans values(217, 109, 12 , round(random()*86)+1);
-insert into jouer_dans values(218, 109, 84 , round(random()*86)+1);
-insert into jouer_dans values(219, 110, 54 , round(random()*86)+1);
-insert into jouer_dans values(220, 110, 57 , round(random()*86)+1);
-insert into jouer_dans values(221, 111, 14 , round(random()*86)+1);
-insert into jouer_dans values(222, 111, 2  , round(random()*86)+1);
-insert into jouer_dans values(223, 112, 26 , round(random()*86)+1);
-insert into jouer_dans values(224, 112, 27 , round(random()*86)+1);
-insert into jouer_dans values(225, 113, 29 , round(random()*86)+1);
-insert into jouer_dans values(226, 113, 39 , round(random()*86)+1);
-insert into jouer_dans values(227, 114, 127, round(random()*86)+1);
-insert into jouer_dans values(228, 114, 2  , round(random()*86)+1);
-insert into jouer_dans values(229, 115, 46 , round(random()*86)+1);
-insert into jouer_dans values(230, 115, 52 , round(random()*86)+1);
-insert into jouer_dans values(231, 116, 71 , round(random()*86)+1);
-insert into jouer_dans values(232, 116, 128, round(random()*86)+1);
-insert into jouer_dans values(233, 117, 20 , round(random()*86)+1);
-insert into jouer_dans values(234, 117, 37 , round(random()*86)+1);
-insert into jouer_dans values(235, 118, 49 , round(random()*86)+1);
-insert into jouer_dans values(236, 118, 58 , round(random()*86)+1);
-insert into jouer_dans values(237, 119, 69 , round(random()*86)+1);
-insert into jouer_dans values(238, 119, 22 , round(random()*86)+1);
-insert into jouer_dans values(239, 120, 10 , round(random()*86)+1);
-insert into jouer_dans values(240, 120, 13 , round(random()*86)+1);
+insert into jouer_dans values(171, 86 , 42 , round(random()*85)+1);
+insert into jouer_dans values(172, 86 , 46 , round(random()*85)+1);
+insert into jouer_dans values(173, 87 , 1  , round(random()*85)+1);
+insert into jouer_dans values(174, 87 , 13 , round(random()*85)+1);
+insert into jouer_dans values(175, 88 , 15 , round(random()*85)+1);
+insert into jouer_dans values(176, 88 , 17 , round(random()*85)+1);
+insert into jouer_dans values(177, 89 , 19 , round(random()*85)+1);
+insert into jouer_dans values(178, 89 , 22 , round(random()*85)+1);
+insert into jouer_dans values(179, 90 , 32 , round(random()*85)+1);
+insert into jouer_dans values(180, 90 , 34 , round(random()*85)+1);
+insert into jouer_dans values(181, 91 , 36 , round(random()*85)+1);
+insert into jouer_dans values(182, 91 , 38 , round(random()*85)+1);
+insert into jouer_dans values(183, 92 , 48 , round(random()*85)+1);
+insert into jouer_dans values(184, 92 , 54 , round(random()*85)+1);
+insert into jouer_dans values(185, 93 , 55 , round(random()*85)+1);
+insert into jouer_dans values(186, 93 , 58 , round(random()*85)+1);
+insert into jouer_dans values(187, 94 , 60 , round(random()*85)+1);
+insert into jouer_dans values(188, 94 , 62 , round(random()*85)+1);
+insert into jouer_dans values(189, 95 , 63 , round(random()*85)+1);
+insert into jouer_dans values(190, 95 , 70 , round(random()*85)+1);
+insert into jouer_dans values(191, 96 , 80 , round(random()*85)+1);
+insert into jouer_dans values(192, 96 , 83 , round(random()*85)+1);
+insert into jouer_dans values(193, 97 , 88 , round(random()*85)+1);
+insert into jouer_dans values(194, 97 , 95 , round(random()*85)+1);
+insert into jouer_dans values(195, 98 , 110, round(random()*85)+1);
+insert into jouer_dans values(196, 98 , 111, round(random()*85)+1);
+insert into jouer_dans values(197, 99 , 113, round(random()*85)+1);
+insert into jouer_dans values(198, 99 , 101, round(random()*85)+1);
+insert into jouer_dans values(199, 100, 103, round(random()*85)+1);
+insert into jouer_dans values(200, 100, 116, round(random()*85)+1);
+insert into jouer_dans values(201, 101, 117, round(random()*85)+1);
+insert into jouer_dans values(202, 101, 125, round(random()*85)+1);
+insert into jouer_dans values(203, 102, 126, round(random()*85)+1);
+insert into jouer_dans values(204, 102, 129, round(random()*85)+1);
+insert into jouer_dans values(205, 103, 130, round(random()*85)+1);
+insert into jouer_dans values(206, 103, 132, round(random()*85)+1);
+insert into jouer_dans values(207, 104, 134, round(random()*85)+1);
+insert into jouer_dans values(208, 104, 135, round(random()*85)+1);
+insert into jouer_dans values(209, 105, 137, round(random()*85)+1);
+insert into jouer_dans values(210, 105, 139, round(random()*85)+1);
+insert into jouer_dans values(211, 106, 143, round(random()*85)+1);
+insert into jouer_dans values(212, 106, 144, round(random()*85)+1);
+insert into jouer_dans values(213, 107, 116, round(random()*85)+1);
+insert into jouer_dans values(214, 107, 116, round(random()*85)+1);
+insert into jouer_dans values(215, 108, 120, round(random()*85)+1);
+insert into jouer_dans values(216, 108, 8  , round(random()*85)+1);
+insert into jouer_dans values(217, 109, 12 , round(random()*85)+1);
+insert into jouer_dans values(218, 109, 84 , round(random()*85)+1);
+insert into jouer_dans values(219, 110, 54 , round(random()*85)+1);
+insert into jouer_dans values(220, 110, 57 , round(random()*85)+1);
+insert into jouer_dans values(221, 111, 14 , round(random()*85)+1);
+insert into jouer_dans values(222, 111, 2  , round(random()*85)+1);
+insert into jouer_dans values(223, 112, 26 , round(random()*85)+1);
+insert into jouer_dans values(224, 112, 27 , round(random()*85)+1);
+insert into jouer_dans values(225, 113, 29 , round(random()*85)+1);
+insert into jouer_dans values(226, 113, 39 , round(random()*85)+1);
+insert into jouer_dans values(227, 114, 127, round(random()*85)+1);
+insert into jouer_dans values(228, 114, 2  , round(random()*85)+1);
+insert into jouer_dans values(229, 115, 46 , round(random()*85)+1);
+insert into jouer_dans values(230, 115, 52 , round(random()*85)+1);
+insert into jouer_dans values(231, 116, 71 , round(random()*85)+1);
+insert into jouer_dans values(232, 116, 128, round(random()*85)+1);
+insert into jouer_dans values(233, 117, 20 , round(random()*85)+1);
+insert into jouer_dans values(234, 117, 37 , round(random()*85)+1);
+insert into jouer_dans values(235, 118, 49 , round(random()*85)+1);
+insert into jouer_dans values(236, 118, 58 , round(random()*85)+1);
+insert into jouer_dans values(237, 119, 69 , round(random()*85)+1);
+insert into jouer_dans values(238, 119, 22 , round(random()*85)+1);
+insert into jouer_dans values(239, 120, 10 , round(random()*85)+1);
+insert into jouer_dans values(240, 120, 13 , round(random()*85)+1);
+
+--- Historique personne ---
+create or replace function op_personne()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_personne, 'INSERT', 'personne', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_personne, 'UPDATE', 'personne', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_personne, 'DELETE', 'personne', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_personne
+after insert or delete or update on personne
+for each row
+execute procedure op_personne();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- Historique personnage ---
+create or replace function op_personnage()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_perso, 'INSERT', 'personnage', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_perso, 'UPDATE', 'personnage', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_perso, 'DELETE', 'personnage', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_personnage
+after insert or delete or update on personnage 
+for each row
+execute procedure op_personnage();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- Historique jouer_dans ---
+create or replace function op_jouer_dans()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_joueur, 'INSERT', 'jouer_dans', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_joueur, 'UPDATE', 'jouer_dans', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_joueur, 'DELETE', 'jouer_dans', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_jouer_dans
+after insert or delete or update on jouer_dans
+for each row
+execute procedure op_jouer_dans();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- Historique franchise ---
+create or replace function op_franchise()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_franchise, 'INSERT', 'franchise', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_franchise, 'UPDATE', 'franchise', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_franchise, 'DELETE', 'franchise', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_franchise
+after insert or delete or update on franchise
+for each row
+execute procedure op_franchise();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- Historique carte ---
+create or replace function op_carte()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_carte, 'INSERT', 'carte', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_carte, 'UPDATE', 'carte', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_carte, 'DELETE', 'carte', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_carte
+after insert or delete or update on carte
+for each row
+execute procedure op_carte();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
+--- Historique combat ---
+create or replace function op_combat()
+returns trigger as $$
+
+declare
+    id integer;
+
+begin
+    select into id max((id_commande)+1) from historique;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then 
+            insert into historique values(id, new.id_combat, 'INSERT', 'combat', current_timestamp);
+        return new;
+    end if;
+
+    if(TG_OP='UPDATE')
+        then 
+            insert into historique values(id, old.id_combat, 'UPDATE', 'combat', current_timestamp);
+        return old;
+    end if;
+
+    if(TG_OP='DELETE')
+        then 
+            insert into historique values(id, old.id_combat, 'DELETE', 'combat', current_timestamp);
+        return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger historique_combat
+after insert or delete or update on combat
+for each row
+execute procedure op_combat();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---

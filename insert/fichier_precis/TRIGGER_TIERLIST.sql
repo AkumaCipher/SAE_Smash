@@ -33,6 +33,48 @@ execute procedure insert_tierlist();
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 
+--- TRI DE LA TIERLIST ---
+create or replace function tri_tierlist()
+returns void as $$
+
+declare
+    nv_place integer := 0;
+    cur refcursor; 
+    val integer;
+    r integer;
+    nb_place integer := 0;
+    nb_place_debut integer := 0;
+    i integer := 0;
+
+begin
+    select into nb_place_debut max(id_rang) from tierlist;
+    nb_place := nb_place_debut;
+    loop
+    exit when i=nb_place_debut;
+        nb_place := nb_place + 1;
+        i := i + 1;
+        update tierlist set id_rang = nb_place where id_rang = i; 
+    end loop;
+
+    select into nb_place count(id_rang) from tierlist;
+    i := 0;
+
+    open cur for select id_rang, ratio from tierlist order by ratio desc;
+    loop
+        fetch cur into r, val;
+        exit when not found;
+     
+        i := i + 1;
+        nv_place := nv_place + 1;
+        update tierlist set id_rang = nv_place where id_rang = r;
+        
+    end loop;
+    close cur; 
+end;
+$$ language plpgsql;
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+
 --- INCREMENTATION STATS DE COMBAT ---
 create or replace function stats_tierlist()
 returns trigger as $$
@@ -93,6 +135,7 @@ begin
                 select into winrate nb_victoire/nb_combat*100 from tierlist where nb_combat > 0 and id_perso=joueur2_p;
                 update tierlist set ratio = winrate where id_perso = joueur2_p;
             end if;
+            perform tri_tierlist();
             return new;
     end if;
 end;
@@ -102,129 +145,4 @@ create trigger stats
 after insert on jouer_dans
 for each row
 execute procedure stats_tierlist();
-
-
---- TRI DE LA TIERLIST ---
-/* create or replace function tri()
-returns void as $$
-
-declare
-    nv_place integer := 0;
-    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
-    val integer;
-    r integer;
-    nb_place integer;
-
-begin
-    select into nb_place max(id_rang) from tierlist;
-    open cur;
-    loop
-        fetch cur into r, val;
-        exit when not found;
-
-        raise notice 'rang: %, val: %', r, val;
-        nb_place := nb_place + 1;
-        nv_place := nv_place + 1;
-        update tierlist set id_rang = nb_place where id_rang = nv_place;
-        update tierlist set id_rang = nv_place where id_rang = r;
-        update tierlist set id_rang = r where id_rang = nb_place;
-    end loop;
-    close cur;
-end;
-$$ language plpgsql; */
-
-
-create or replace function tri2() returns void as $$
-
-declare
-    nv_place integer := 0;
-    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
-    val integer;
-    r integer;
-    nb_place integer;
-
-begin
-    select into nb_place max(id_rang) from tierlist;
-    nb_place := nb_place + 1;
-    open cur;
-    loop
-        fetch cur into r, val;
-        exit when not found;
-
-        nb_place := nb_place + 1;
-        nv_place := nv_place + 1;
-        update tierlist set id_rang = nb_place where id_rang = nv_place;
-        update tierlist set id_rang = nv_place where id_rang = r;
-        update tierlist set id_rang = r where id_rang = nb_place;
-
-    end loop;
-    close cur;
-end;
-$$ language plpgsql;
-
---- Et la en gros je refais la même fonction qui sera utilisé et elle utilise celle d'avant,
---- Ce qui fait la combinaison des deux fonctions et ça marche, j'ai testé :p
-
-create or replace function tri()
-returns void as $$
-
-declare
-    nv_place integer := 0;
-    cur cursor for select id_rang, ratio from tierlist order by ratio desc;
-    val integer;
-    r integer;
-    nb_place integer;
-
-begin
-    select into nb_place max(id_rang) from tierlist;
-    nb_place := nb_place + 1;
-    open cur;
-    loop
-        fetch cur into r, val;
-        exit when not found;
-     
-        nb_place := nb_place + 1;
-        nv_place := nv_place + 1;
-        update tierlist set id_rang = nb_place where id_rang = nv_place;
-        update tierlist set id_rang = nv_place where id_rang = r;
-        --- update tierlist set id_rang = r where id_rang = nb_place; --- 
-        
-    end loop;
-    close cur;
-    perform tri2();
-end;
-$$ language plpgsql;
-
-
-/* create or replace function tri()
-returns void as $$
-
-declare
-    nv_place integer := 1;
-    max_ratio integer :=  101;
-    cur refcursor;
-    r integer;
-    nb_place integer;
-    nb_place_debut integer;
-    compt integer := 0;
-
-begin
-    select into nb_place_debut max(id_rang) from tierlist;
-    nb_place := nb_place_debut+1;
-    while compt < nb_place_debut loop
-        
-        select into max_ratio max(ratio) from tierlist where ratio<max_ratio;
-        select into r id_rang from tierlist where ratio = max_ratio and id_rang > nv_place limit 1;
-        
-            
-            update tierlist set id_rang = nb_place where id_rang = nv_place;
-            update tierlist set id_rang = nv_place where id_rang = r;
-            nb_place := nb_place + 1;
-            nv_place := nv_place + 1;
-            compt := compt + 1;
-
-    end loop;
-end;
-$$ language plpgsql;
-
-*/
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
