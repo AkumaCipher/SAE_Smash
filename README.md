@@ -21,6 +21,8 @@ Chef de Projet : **Paul Hurdebourcq [BUT2-TD2-TPD]**.
 
 Collaborateur : **Théo Massias [BUT2-TD2-TPD]**.
 
+## <span style="color:orange"> N'oubliez pas d'aller voir nos différents datavis !!! </span>
+
 ## <span style="color:red"> Comment installer la base de données ? </span>
 
 D'abord, il faudrait que vous créer la base de données dans laquelle vous allez insérer toutes les données. Un exemple simple :
@@ -44,4 +46,51 @@ Une fois cela fait, il faut maintenant insérer les données dans cette base. Po
 
 ```sql
 \i /mnt/c/Users/petit/Desktop/Cours/SAEs/SAE_SQL_Smash/SAE_Smash/CREATE_TABLE.sql
+```
+
+# <span style="color:lightblue"> Comment naviguer dans la base de données ? </span>
+
+Afin d'avoir une vue global de vos bases de données : 
+```sql
+\l
+```
+
+Pour vous déplacer dans une autre base de données : 
+```sql
+\c [nom_de_la_base]
+```
+
+Pour prendre connaissance des fonctions de la base :
+
+```sql
+\df
+```
+
+Pour regarder dans une table précise :
+```sql
+select [colonne] from [table];
+select * from personne where nom='Pataploup';
+```
+
+Appeler une fonction :
+```sql
+select manuel_stats_joueurs();
+```
+
+Regarder les tables de classement :
+```sql
+select * from tierlist order by id_rang;
+select * from classement order by id_rang;
+```
+
+**Modifier une table manuellement :**
+```sql
+insert into [table] values (arg1, arg2, etc...);
+delete from [table];
+update [table] set [colonne] = [valeur];
+
+insert into personne values (1, 'Paulo', 19, 'M', 'France', 'IUT');
+delete from personnage where id_perso=2;
+--- delete from personnage supprime toutes les données de la table personnage.
+update personne set nom = 'Toto' where id_personne = 1;
 ```
