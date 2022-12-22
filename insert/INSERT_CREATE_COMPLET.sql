@@ -440,11 +440,6 @@ begin
     end if;
 end;
 $$ language plpgsql;
-
-create trigger insert2
-after insert or delete on personne
-for each row
-execute procedure insert_classement();
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 
