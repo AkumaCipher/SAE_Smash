@@ -80,8 +80,6 @@ CREATE TABLE jouer_dans(
    FOREIGN KEY(id_perso) REFERENCES personnage(id_perso),
    FOREIGN KEY(id_personne) REFERENCES personne(id_personne)
 );
---- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
 
 create or replace function manuel_stats_joueurs()
 returns void as $$
@@ -185,10 +183,15 @@ end;
 $$ language plpgsql;
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-
 --- INSERTION TIERLIST ---
 create or replace function insert_tierlist()
 returns trigger as $$
+
+/* 
+    Le but de cette fonction est de remplir la table tierlist en même temps que la table personnage.
+    Inutile de répéter les insert deux fois, c'est pourquoi cette fonction existe, elle est plus "propre" à nos yeux.
+    Cela va de soi, si on souhaite retirer un personnage de la table personnage, il se retire de lui-même de la table tierlist.
+*/
 
 declare
     id integer;
@@ -224,6 +227,13 @@ execute procedure insert_tierlist();
 --- TRI DE LA TIERLIST ---
 create or replace function tri_tierlist()
 returns void as $$
+
+/*
+    Cette fonction sera utilisée dans un trigger par la suite, elle sert à trier la table tierlist.
+    Le tri se fait par rapport à la clé primaire id_rang.
+    Cette clé représente la place du personnage par rapport aux autres, id_rang = 1 est donc le personnage le plus perfomant et viable.
+    Les personnages sont triés en fonction de leur ratio de victoire, plus le ratio est proche de 100, plus le personnage est bien classé.
+*/
 
 declare
     nv_place integer := 0;
@@ -266,6 +276,12 @@ $$ language plpgsql;
 --- INCREMENTATION STATS DE COMBAT ---
 create or replace function stats_tierlist()
 returns trigger as $$
+
+/*
+    Cette fonction va utiliser la fonction ci-dessus : tri_tierlist.
+    Elle a pour but d'incrémenter les différentes colonnes concernant les combats de la table tierlist.
+    -> nb_combat, nb_victoire, nb_defaite, et ratio.
+*/
 
 declare
     perso integer;
@@ -335,10 +351,52 @@ for each row
 execute procedure stats_tierlist();
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
+--- INSERTION CLASSEMENT ---
+create or replace function insert_classement()
+returns trigger as $$
+
+<<<<<<< Updated upstream
+/* 
+    Le but de cette fonction est de remplir la table classement en même temps que la table personne.
+    Inutile de répéter les insert deux fois, c'est pourquoi cette fonction existe, elle est plus "propre" à nos yeux.
+    Cela va de soi, si on souhaite retirer une personne de la table personne, elle se retire d'elle-même de la table classement.
+*/
+=======
+declare
+    id integer;
+
+begin
+    select into id max((id_rang)+1) from classement;
+    if(id is NULL)
+        then
+            id = 1;
+    end if;
+
+    if(TG_OP='INSERT')
+        then
+            insert into classement values(id, new.id_personne, new.pseudo, 0, 0, 0, 0);
+            return new;
+    end if;
+
+    if(TG_OP='DELETE')
+        then
+            delete from classement where id_personne = old.id_personne;
+            return old;
+    end if;
+end;
+$$ language plpgsql;
+
+create trigger insert2
+after insert or delete on personne
+for each row
+execute procedure insert_classement();
+--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
 
 --- INSERTION CLASSEMENT ---
 create or replace function insert_classement()
 returns trigger as $$
+>>>>>>> Stashed changes
 
 declare
     id integer;
@@ -375,77 +433,12 @@ execute procedure insert_classement();
 create or replace function tri_classement()
 returns void as $$
 
-declare
-    nv_place integer := 0;
-    cur refcursor; 
-    val integer;
-    r integer;
-    nb_place integer := 0;
-    nb_place_debut integer := 0;
-    i integer := 0;
-
-begin
-    select into nb_place_debut max(id_rang) from classement;
-    nb_place := nb_place_debut;
-    loop
-    exit when i=nb_place_debut;
-        nb_place := nb_place + 1;
-        i := i + 1;
-        update classement set id_rang = nb_place where id_rang = i; 
-    end loop;
-
-    select into nb_place count(id_rang) from classement;
-    i := 0;
-
-    open cur for select id_rang, ratio from classement order by ratio desc;
-    loop
-        fetch cur into r, val;
-        exit when not found;
-     
-        i := i + 1;
-        nv_place := nv_place + 1;
-        update classement set id_rang = nv_place where id_rang = r;
-        
-    end loop;
-    close cur; 
-end;
-$$ language plpgsql;
---- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
---- INSERTION CLASSEMENT ---
-create or replace function insert_classement()
-returns trigger as $$
-
-declare
-    id integer;
-
-begin
-    select into id max((id_rang)+1) from classement;
-    if(id is NULL)
-        then
-            id = 1;
-    end if;
-
-    if(TG_OP='INSERT')
-        then
-            insert into classement values(id, new.id_personne, new.pseudo, 0, 0, 0, 0);
-            return new;
-    end if;
-
-    if(TG_OP='DELETE')
-        then
-            delete from classement where id_personne = old.id_personne;
-            return old;
-    end if;
-end;
-$$ language plpgsql;
---- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
---- TRI DU CLASSEMENT ---
-create or replace function tri_classement()
-returns void as $$
+/*
+    Cette fonction sera utilisée dans un trigger par la suite, elle sert à trier la table classement.
+    Le tri se fait par rapport à la clé primaire id_rang.
+    Cette clé représente la place de la personne par rapport aux autres, id_rang = 1 est donc la personne la plus perfomante.
+    Les personnnes sont triées en fonction de leur ratio de victoire, plus le ratio est proche de 100, plus la personne est bien classée.
+*/
 
 declare
     nv_place integer := 0;
@@ -488,6 +481,12 @@ $$ language plpgsql;
 --- INCREMENTATION STATS DE COMBAT ---
 create or replace function stats_classement()
 returns trigger as $$
+
+/*
+    Cette fonction va utiliser la fonction ci-dessus : tri_classement.
+    Elle a pour but d'incrémenter les différentes colonnes concernant les combats de la table classement.
+    -> nb_combat, nb_victoire, nb_defaite, et ratio.
+*/
 
 declare
     perso integer;
@@ -557,8 +556,149 @@ for each row
 execute procedure stats_classement();
 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
+--- INSERTIONS ---
+INSERT INTO franchise values(1,  'Super Mario'                  );
+INSERT INTO franchise values(2,  'Pokemon'                      );
+INSERT INTO franchise values(3,  'Zelda'                        );
+INSERT INTO franchise values(4,  'Fire Emblem'                  );
+INSERT INTO franchise values(5,  'Metroid'                      );
+INSERT INTO franchise values(6,  'Kirby'                        );
+INSERT INTO franchise values(7,  'Star Fox'                     );
+INSERT INTO franchise values(8,  'Kid Icarus'                   );
+INSERT INTO franchise values(9,  'Donkey Kong'                  );
+INSERT INTO franchise values(10, 'Earthbound'                   );
+INSERT INTO franchise values(11, 'Yoshi'                        );
+INSERT INTO franchise values(12, 'F-Zero'                       );
+INSERT INTO franchise values(13, 'Ice Climber'                  );
+INSERT INTO franchise values(14, 'Game & Watch'                 );
+INSERT INTO franchise values(15, 'WarioWare'                    );
+INSERT INTO franchise values(16, 'Metal Gear'                   );
+INSERT INTO franchise values(17, 'Sonic the Hedgehog'           );
+INSERT INTO franchise values(18, 'Pikmin'                       );
+INSERT INTO franchise values(19, 'Nintendo Entertainment System');
+INSERT INTO franchise values(20, 'Animal Crossing'              );
+INSERT INTO franchise values(21, 'Megaman'                      );
+INSERT INTO franchise values(22, 'Wii Fit'                      );
+INSERT INTO franchise values(23, 'Punch-Out'                    );
+INSERT INTO franchise values(24, 'Mii'                          );
+INSERT INTO franchise values(25, 'Pac-Man'                      );
+INSERT INTO franchise values(26, 'Xenoblade'                    );
+INSERT INTO franchise values(27, 'Duck Hunt'                    );
+INSERT INTO franchise values(28, 'Street Fighter'               );
+INSERT INTO franchise values(29, 'Final Fantasy'                );
+INSERT INTO franchise values(30, 'Bayonetta'                    );
+INSERT INTO franchise values(31, 'Splatoon'                     );
+INSERT INTO franchise values(32, 'Castlevania'                  );
+INSERT INTO franchise values(33, 'Persona'                      );
+INSERT INTO franchise values(34, 'Dragon Quest'                 );
+INSERT INTO franchise values(35, 'Banjo-Kazooie'                );
+INSERT INTO franchise values(36, 'Fatal Fury'                   );
+INSERT INTO franchise values(37, 'Arms'                         );
+INSERT INTO franchise values(38, 'Minecraft'                    );
+INSERT INTO franchise values(39, 'Tekken'                       );
+INSERT INTO franchise values(40, 'Kingdom Hearts'               );
 
---- personne ---
+--- INSERTIONS ---
+INSERT INTO carte values(1 , 'Destination Finale');
+INSERT INTO carte values(2 , 'Champs de Bataille');
+INSERT INTO carte values(3 , 'Smashville'        );
+INSERT INTO carte values(4 , 'Secteur Z'         );
+INSERT INTO carte values(5 , 'Route arc-en-ciel' );
+INSERT INTO carte values(6 , 'Temple'            );
+INSERT INTO carte values(7 , 'Yoshi Story'       );
+INSERT INTO carte values(8 , 'Venom'             );
+INSERT INTO carte values(9 , 'Stade Pokemon'     );
+INSERT INTO carte values(10, 'Fourside'          );
+
+--- INSERTIONS ---
+INSERT INTO personnage values(1 , 'Mario'           , 1 );
+INSERT INTO personnage values(2 , 'Donkey Kong'     , 9 );
+INSERT INTO personnage values(3 , 'Link'            , 3 );
+INSERT INTO personnage values(4 , 'Samus'           , 5 );
+INSERT INTO personnage values(5 , 'Dark Samus'      , 5 );
+INSERT INTO personnage values(6 , 'Yoshi'           , 11);
+INSERT INTO personnage values(7 , 'Kirby'           , 6 );
+INSERT INTO personnage values(8 , 'Fox'             , 7 ); 
+INSERT INTO personnage values(9 , 'Pikachu'         , 2 );
+INSERT INTO personnage values(10, 'Luigi'           , 1 );
+INSERT INTO personnage values(11, 'Ness'            , 10);
+INSERT INTO personnage values(12, 'Captain Falcon'  , 12);
+INSERT INTO personnage values(13, 'Jigglypuff'      , 2 );
+INSERT INTO personnage values(14, 'Peach'           , 1 );
+INSERT INTO personnage values(15, 'Daisy'           , 1 );
+INSERT INTO personnage values(16, 'Bowser'          , 1 );
+INSERT INTO personnage values(17, 'Ice Climbers'    , 13);
+INSERT INTO personnage values(18, 'Sheik'           , 3 );
+INSERT INTO personnage values(19, 'Zelda'           , 3 );
+INSERT INTO personnage values(20, 'Dr. Mario'       , 1 );
+INSERT INTO personnage values(21, 'Pichu'           , 2 );
+INSERT INTO personnage values(22, 'Falco'           , 7 );
+INSERT INTO personnage values(23, 'Marth'           , 4 );
+INSERT INTO personnage values(24, 'Lucina'          , 4 );
+INSERT INTO personnage values(25, 'Young Link'      , 3 );
+INSERT INTO personnage values(26, 'Ganondorf'       , 3 );
+INSERT INTO personnage values(27, 'Mewtwo'          , 2 );
+INSERT INTO personnage values(28, 'Roy'             , 4 );
+INSERT INTO personnage values(29, 'Chrom'           , 4 );
+INSERT INTO personnage values(30, 'Mr. Game & Watch', 14);
+INSERT INTO personnage values(31, 'Meta Knight'     , 6 );
+INSERT INTO personnage values(32, 'Pit'             , 8 );
+INSERT INTO personnage values(33, 'Dark Pit'        , 8 );
+INSERT INTO personnage values(34, 'Zero Suit Samus' , 5 );
+INSERT INTO personnage values(35, 'Wario'           , 15);
+INSERT INTO personnage values(36, 'Snake'           , 16);
+INSERT INTO personnage values(37, 'Ike'             , 4 );
+INSERT INTO personnage values(38, 'Pokemon Trainer' , 2 );
+INSERT INTO personnage values(39, 'Diddy Kong'      , 9 );
+INSERT INTO personnage values(40, 'Lucas'           , 10);
+INSERT INTO personnage values(41, 'Sonic'           , 17);
+INSERT INTO personnage values(42, 'King Dedede'     , 6 );
+INSERT INTO personnage values(43, 'Olimar'          , 18);
+INSERT INTO personnage values(44, 'Lucario'         , 2 );
+INSERT INTO personnage values(45, 'R.O.B'           , 19);
+INSERT INTO personnage values(46, 'Toon Link'       , 3 );
+INSERT INTO personnage values(47, 'Wolf'            , 7 );
+INSERT INTO personnage values(48, 'Villager'        , 20);
+INSERT INTO personnage values(49, 'Mega Man'        , 21);
+INSERT INTO personnage values(50, 'Wii Fit Trainer' , 22);
+INSERT INTO personnage values(51, 'Rosalina & Luma' , 1 );
+INSERT INTO personnage values(52, 'Little Mac'      , 23);
+INSERT INTO personnage values(53, 'Greninja'        , 2 );
+INSERT INTO personnage values(54, 'Mii Brawler'     , 24);
+INSERT INTO personnage values(55, 'Mii Swordfighter', 24);
+INSERT INTO personnage values(56, 'Mii Gunner'      , 24);
+INSERT INTO personnage values(57, 'Palutena'        , 8 );
+INSERT INTO personnage values(58, 'Pac-Man'         , 25);
+INSERT INTO personnage values(59, 'Robin'           , 4 );
+INSERT INTO personnage values(60, 'Shulk'           , 26);
+INSERT INTO personnage values(61, 'Bowser Jr.'      , 1 );
+INSERT INTO personnage values(62, 'Duck Hunt'       , 27);
+INSERT INTO personnage values(63, 'Ryu'             , 28);
+INSERT INTO personnage values(64, 'Ken'             , 28);
+INSERT INTO personnage values(65, 'Cloud'           , 29);
+INSERT INTO personnage values(66, 'Corrin'          , 4 );
+INSERT INTO personnage values(67, 'Bayonetta'       , 30);
+INSERT INTO personnage values(68, 'Inkling'         , 31);
+INSERT INTO personnage values(69, 'Ridley'          , 5 );
+INSERT INTO personnage values(70, 'Simon'           , 32);
+INSERT INTO personnage values(71, 'Richter'         , 32);
+INSERT INTO personnage values(72, 'King K. Rool'    , 9 );
+INSERT INTO personnage values(73, 'Isabelle'        , 20);
+INSERT INTO personnage values(74, 'Incineroar'      , 2 );
+INSERT INTO personnage values(75, 'Piranha Plant'   , 1 );
+INSERT INTO personnage values(76, 'Joker'           , 33);
+INSERT INTO personnage values(77, 'Hero'            , 34);
+INSERT INTO personnage values(78, 'Banjo & Kazooie' , 35);
+INSERT INTO personnage values(79, 'Terry'           , 36);
+INSERT INTO personnage values(80, 'Byleth'          , 4 );
+INSERT INTO personnage values(81, 'Min Min'         , 37);
+INSERT INTO personnage values(82, 'Steve'           , 38);
+INSERT INTO personnage values(83, 'Sephiroth'       , 29);
+INSERT INTO personnage values(84, 'Pyra/Mythra'     , 26);
+INSERT INTO personnage values(85, 'Kazuya'          , 39);
+INSERT INTO personnage values(86, 'Sora'            , 40);
+
+--- INSERTIONS ---
 INSERT INTO personne values(1  , 'MKleo'         , 21, 'M', 'Mexique'    , 'T1'                 );
 INSERT INTO personne values(2  , 'HungryBox'     , 29, 'F', 'Etats-Unis' , 'T1'                 );
 INSERT INTO personne values(3  , 'Capitaine'     , 25, 'M', 'France'     , 'IUT'                );
@@ -704,149 +844,7 @@ INSERT INTO personne values(142, 'Jonne'         , 42, 'M', 'Etats-Unis' , 'Bing
 INSERT INTO personne values(143, 'Senna'         , 42, 'M', 'Etats-Unis' , 'Bing chilling'      );
 INSERT INTO personne values(144, 'Sun Tzu'       , 50, 'M', 'Chine'      , 'Bing chilling'      );
 
---- carte ---
-INSERT INTO carte values(1 , 'Destination Finale');
-INSERT INTO carte values(2 , 'Champs de Bataille');
-INSERT INTO carte values(3 , 'Smashville'        );
-INSERT INTO carte values(4 , 'Secteur Z'         );
-INSERT INTO carte values(5 , 'Route arc-en-ciel' );
-INSERT INTO carte values(6 , 'Temple'            );
-INSERT INTO carte values(7 , 'Yoshi Story'       );
-INSERT INTO carte values(8 , 'Venom'             );
-INSERT INTO carte values(9 , 'Stade Pokemon'     );
-INSERT INTO carte values(10, 'Fourside'          );
-
---- franchise ---
-INSERT INTO franchise values(1,  'Super Mario'                  );
-INSERT INTO franchise values(2,  'Pokemon'                      );
-INSERT INTO franchise values(3,  'Zelda'                        );
-INSERT INTO franchise values(4,  'Fire Emblem'                  );
-INSERT INTO franchise values(5,  'Metroid'                      );
-INSERT INTO franchise values(6,  'Kirby'                        );
-INSERT INTO franchise values(7,  'Star Fox'                     );
-INSERT INTO franchise values(8,  'Kid Icarus'                   );
-INSERT INTO franchise values(9,  'Donkey Kong'                  );
-INSERT INTO franchise values(10, 'Earthbound'                   );
-INSERT INTO franchise values(11, 'Yoshi'                        );
-INSERT INTO franchise values(12, 'F-Zero'                       );
-INSERT INTO franchise values(13, 'Ice Climber'                  );
-INSERT INTO franchise values(14, 'Game & Watch'                 );
-INSERT INTO franchise values(15, 'WarioWare'                    );
-INSERT INTO franchise values(16, 'Metal Gear'                   );
-INSERT INTO franchise values(17, 'Sonic the Hedgehog'           );
-INSERT INTO franchise values(18, 'Pikmin'                       );
-INSERT INTO franchise values(19, 'Nintendo Entertainment System');
-INSERT INTO franchise values(20, 'Animal Crossing'              );
-INSERT INTO franchise values(21, 'Megaman'                      );
-INSERT INTO franchise values(22, 'Wii Fit'                      );
-INSERT INTO franchise values(23, 'Punch-Out'                    );
-INSERT INTO franchise values(24, 'Mii'                          );
-INSERT INTO franchise values(25, 'Pac-Man'                      );
-INSERT INTO franchise values(26, 'Xenoblade'                    );
-INSERT INTO franchise values(27, 'Duck Hunt'                    );
-INSERT INTO franchise values(28, 'Street Fighter'               );
-INSERT INTO franchise values(29, 'Final Fantasy'                );
-INSERT INTO franchise values(30, 'Bayonetta'                    );
-INSERT INTO franchise values(31, 'Splatoon'                     );
-INSERT INTO franchise values(32, 'Castlevania'                  );
-INSERT INTO franchise values(33, 'Persona'                      );
-INSERT INTO franchise values(34, 'Dragon Quest'                 );
-INSERT INTO franchise values(35, 'Banjo-Kazooie'                );
-INSERT INTO franchise values(36, 'Fatal Fury'                   );
-INSERT INTO franchise values(37, 'Arms'                         );
-INSERT INTO franchise values(38, 'Minecraft'                    );
-INSERT INTO franchise values(39, 'Tekken'                       );
-INSERT INTO franchise values(40, 'Kingdom Hearts'               );
-
---- personnage ---
-INSERT INTO personnage values(1 , 'Mario'           , 1 );
-INSERT INTO personnage values(2 , 'Donkey Kong'     , 9 );
-INSERT INTO personnage values(3 , 'Link'            , 3 );
-INSERT INTO personnage values(4 , 'Samus'           , 5 );
-INSERT INTO personnage values(5 , 'Dark Samus'      , 5 );
-INSERT INTO personnage values(6 , 'Yoshi'           , 11);
-INSERT INTO personnage values(7 , 'Kirby'           , 6 );
-INSERT INTO personnage values(8 , 'Fox'             , 7 ); 
-INSERT INTO personnage values(9 , 'Pikachu'         , 2 );
-INSERT INTO personnage values(10, 'Luigi'           , 1 );
-INSERT INTO personnage values(11, 'Ness'            , 10);
-INSERT INTO personnage values(12, 'Captain Falcon'  , 12);
-INSERT INTO personnage values(13, 'Jigglypuff'      , 2 );
-INSERT INTO personnage values(14, 'Peach'           , 1 );
-INSERT INTO personnage values(15, 'Daisy'           , 1 );
-INSERT INTO personnage values(16, 'Bowser'          , 1 );
-INSERT INTO personnage values(17, 'Ice Climbers'    , 13);
-INSERT INTO personnage values(18, 'Sheik'           , 3 );
-INSERT INTO personnage values(19, 'Zelda'           , 3 );
-INSERT INTO personnage values(20, 'Dr. Mario'       , 1 );
-INSERT INTO personnage values(21, 'Pichu'           , 2 );
-INSERT INTO personnage values(22, 'Falco'           , 7 );
-INSERT INTO personnage values(23, 'Marth'           , 4 );
-INSERT INTO personnage values(24, 'Lucina'          , 4 );
-INSERT INTO personnage values(25, 'Young Link'      , 3 );
-INSERT INTO personnage values(26, 'Ganondorf'       , 3 );
-INSERT INTO personnage values(27, 'Mewtwo'          , 2 );
-INSERT INTO personnage values(28, 'Roy'             , 4 );
-INSERT INTO personnage values(29, 'Chrom'           , 4 );
-INSERT INTO personnage values(30, 'Mr. Game & Watch', 14);
-INSERT INTO personnage values(31, 'Meta Knight'     , 6 );
-INSERT INTO personnage values(32, 'Pit'             , 8 );
-INSERT INTO personnage values(33, 'Dark Pit'        , 8 );
-INSERT INTO personnage values(34, 'Zero Suit Samus' , 5 );
-INSERT INTO personnage values(35, 'Wario'           , 15);
-INSERT INTO personnage values(36, 'Snake'           , 16);
-INSERT INTO personnage values(37, 'Ike'             , 4 );
-INSERT INTO personnage values(38, 'Pokemon Trainer' , 2 );
-INSERT INTO personnage values(39, 'Diddy Kong'      , 9 );
-INSERT INTO personnage values(40, 'Lucas'           , 10);
-INSERT INTO personnage values(41, 'Sonic'           , 17);
-INSERT INTO personnage values(42, 'King Dedede'     , 6 );
-INSERT INTO personnage values(43, 'Olimar'          , 18);
-INSERT INTO personnage values(44, 'Lucario'         , 2 );
-INSERT INTO personnage values(45, 'R.O.B'           , 19);
-INSERT INTO personnage values(46, 'Toon Link'       , 3 );
-INSERT INTO personnage values(47, 'Wolf'            , 7 );
-INSERT INTO personnage values(48, 'Villager'        , 20);
-INSERT INTO personnage values(49, 'Mega Man'        , 21);
-INSERT INTO personnage values(50, 'Wii Fit Trainer' , 22);
-INSERT INTO personnage values(51, 'Rosalina & Luma' , 1 );
-INSERT INTO personnage values(52, 'Little Mac'      , 23);
-INSERT INTO personnage values(53, 'Greninja'        , 2 );
-INSERT INTO personnage values(54, 'Mii Brawler'     , 24);
-INSERT INTO personnage values(55, 'Mii Swordfighter', 24);
-INSERT INTO personnage values(56, 'Mii Gunner'      , 24);
-INSERT INTO personnage values(57, 'Palutena'        , 8 );
-INSERT INTO personnage values(58, 'Pac-Man'         , 25);
-INSERT INTO personnage values(59, 'Robin'           , 4 );
-INSERT INTO personnage values(60, 'Shulk'           , 26);
-INSERT INTO personnage values(61, 'Bowser Jr.'      , 1 );
-INSERT INTO personnage values(62, 'Duck Hunt'       , 27);
-INSERT INTO personnage values(63, 'Ryu'             , 28);
-INSERT INTO personnage values(64, 'Ken'             , 28);
-INSERT INTO personnage values(65, 'Cloud'           , 29);
-INSERT INTO personnage values(66, 'Corrin'          , 4 );
-INSERT INTO personnage values(67, 'Bayonetta'       , 30);
-INSERT INTO personnage values(68, 'Inkling'         , 31);
-INSERT INTO personnage values(69, 'Ridley'          , 5 );
-INSERT INTO personnage values(70, 'Simon'           , 32);
-INSERT INTO personnage values(71, 'Richter'         , 32);
-INSERT INTO personnage values(72, 'King K. Rool'    , 9 );
-INSERT INTO personnage values(73, 'Isabelle'        , 20);
-INSERT INTO personnage values(74, 'Incineroar'      , 2 );
-INSERT INTO personnage values(75, 'Piranha Plant'   , 1 );
-INSERT INTO personnage values(76, 'Joker'           , 33);
-INSERT INTO personnage values(77, 'Hero'            , 34);
-INSERT INTO personnage values(78, 'Banjo & Kazooie' , 35);
-INSERT INTO personnage values(79, 'Terry'           , 36);
-INSERT INTO personnage values(80, 'Byleth'          , 4 );
-INSERT INTO personnage values(81, 'Min Min'         , 37);
-INSERT INTO personnage values(82, 'Steve'           , 38);
-INSERT INTO personnage values(83, 'Sephiroth'       , 29);
-INSERT INTO personnage values(84, 'Pyra/Mythra'     , 26);
-INSERT INTO personnage values(85, 'Kazuya'          , 39);
-INSERT INTO personnage values(86, 'Sora'            , 40);
-
---- combat ---
+--- INSERTIONS ---
 insert into combat values(1  , round(random()*9)+1, 3, 1, 'Bo5');
 insert into combat values(2  , round(random()*9)+1, 2, 3, 'Bo5');
 insert into combat values(3  , round(random()*9)+1, 3, 2, 'Bo5');
@@ -968,7 +966,7 @@ insert into combat values(118, round(random()*9)+1, 0, 2, 'Bo3');
 insert into combat values(119, round(random()*9)+1, 1, 2, 'Bo3');
 insert into combat values(120, round(random()*9)+1, 2, 1, 'Bo3');
 
---- jouer_dans ---
+--- INSERTIONS ---
 insert into jouer_dans values(1  , 1  , 1  , 74);
 insert into jouer_dans values(2  , 1  , 5  , 24);
 insert into jouer_dans values(3  , 2  , 4  , 50);
@@ -1139,80 +1137,84 @@ insert into jouer_dans values(167, 84 , 97 , 71);
 insert into jouer_dans values(168, 84 , 93 , 19);
 insert into jouer_dans values(169, 85 , 51 , 21);
 insert into jouer_dans values(170, 85 , 41 , 17);
-insert into jouer_dans values(171, 86 , 42 , round(random()*85)+1);
-insert into jouer_dans values(172, 86 , 46 , round(random()*85)+1);
-insert into jouer_dans values(173, 87 , 1  , round(random()*85)+1);
-insert into jouer_dans values(174, 87 , 13 , round(random()*85)+1);
-insert into jouer_dans values(175, 88 , 15 , round(random()*85)+1);
-insert into jouer_dans values(176, 88 , 17 , round(random()*85)+1);
-insert into jouer_dans values(177, 89 , 19 , round(random()*85)+1);
-insert into jouer_dans values(178, 89 , 22 , round(random()*85)+1);
-insert into jouer_dans values(179, 90 , 32 , round(random()*85)+1);
-insert into jouer_dans values(180, 90 , 34 , round(random()*85)+1);
-insert into jouer_dans values(181, 91 , 36 , round(random()*85)+1);
-insert into jouer_dans values(182, 91 , 38 , round(random()*85)+1);
-insert into jouer_dans values(183, 92 , 48 , round(random()*85)+1);
-insert into jouer_dans values(184, 92 , 54 , round(random()*85)+1);
-insert into jouer_dans values(185, 93 , 55 , round(random()*85)+1);
-insert into jouer_dans values(186, 93 , 58 , round(random()*85)+1);
-insert into jouer_dans values(187, 94 , 60 , round(random()*85)+1);
-insert into jouer_dans values(188, 94 , 62 , round(random()*85)+1);
-insert into jouer_dans values(189, 95 , 63 , round(random()*85)+1);
-insert into jouer_dans values(190, 95 , 70 , round(random()*85)+1);
-insert into jouer_dans values(191, 96 , 80 , round(random()*85)+1);
-insert into jouer_dans values(192, 96 , 83 , round(random()*85)+1);
-insert into jouer_dans values(193, 97 , 88 , round(random()*85)+1);
-insert into jouer_dans values(194, 97 , 95 , round(random()*85)+1);
-insert into jouer_dans values(195, 98 , 110, round(random()*85)+1);
-insert into jouer_dans values(196, 98 , 111, round(random()*85)+1);
-insert into jouer_dans values(197, 99 , 113, round(random()*85)+1);
-insert into jouer_dans values(198, 99 , 101, round(random()*85)+1);
-insert into jouer_dans values(199, 100, 103, round(random()*85)+1);
-insert into jouer_dans values(200, 100, 116, round(random()*85)+1);
-insert into jouer_dans values(201, 101, 117, round(random()*85)+1);
-insert into jouer_dans values(202, 101, 125, round(random()*85)+1);
-insert into jouer_dans values(203, 102, 126, round(random()*85)+1);
-insert into jouer_dans values(204, 102, 129, round(random()*85)+1);
-insert into jouer_dans values(205, 103, 130, round(random()*85)+1);
-insert into jouer_dans values(206, 103, 132, round(random()*85)+1);
-insert into jouer_dans values(207, 104, 134, round(random()*85)+1);
-insert into jouer_dans values(208, 104, 135, round(random()*85)+1);
-insert into jouer_dans values(209, 105, 137, round(random()*85)+1);
-insert into jouer_dans values(210, 105, 139, round(random()*85)+1);
-insert into jouer_dans values(211, 106, 143, round(random()*85)+1);
-insert into jouer_dans values(212, 106, 144, round(random()*85)+1);
-insert into jouer_dans values(213, 107, 116, round(random()*85)+1);
-insert into jouer_dans values(214, 107, 116, round(random()*85)+1);
-insert into jouer_dans values(215, 108, 120, round(random()*85)+1);
-insert into jouer_dans values(216, 108, 8  , round(random()*85)+1);
-insert into jouer_dans values(217, 109, 12 , round(random()*85)+1);
-insert into jouer_dans values(218, 109, 84 , round(random()*85)+1);
-insert into jouer_dans values(219, 110, 54 , round(random()*85)+1);
-insert into jouer_dans values(220, 110, 57 , round(random()*85)+1);
-insert into jouer_dans values(221, 111, 14 , round(random()*85)+1);
-insert into jouer_dans values(222, 111, 2  , round(random()*85)+1);
-insert into jouer_dans values(223, 112, 26 , round(random()*85)+1);
-insert into jouer_dans values(224, 112, 27 , round(random()*85)+1);
-insert into jouer_dans values(225, 113, 29 , round(random()*85)+1);
-insert into jouer_dans values(226, 113, 39 , round(random()*85)+1);
-insert into jouer_dans values(227, 114, 127, round(random()*85)+1);
-insert into jouer_dans values(228, 114, 2  , round(random()*85)+1);
-insert into jouer_dans values(229, 115, 46 , round(random()*85)+1);
-insert into jouer_dans values(230, 115, 52 , round(random()*85)+1);
-insert into jouer_dans values(231, 116, 71 , round(random()*85)+1);
-insert into jouer_dans values(232, 116, 128, round(random()*85)+1);
-insert into jouer_dans values(233, 117, 20 , round(random()*85)+1);
-insert into jouer_dans values(234, 117, 37 , round(random()*85)+1);
-insert into jouer_dans values(235, 118, 49 , round(random()*85)+1);
-insert into jouer_dans values(236, 118, 58 , round(random()*85)+1);
-insert into jouer_dans values(237, 119, 69 , round(random()*85)+1);
-insert into jouer_dans values(238, 119, 22 , round(random()*85)+1);
-insert into jouer_dans values(239, 120, 10 , round(random()*85)+1);
-insert into jouer_dans values(240, 120, 13 , round(random()*85)+1);
+insert into jouer_dans values(171, 86 , 42 , round(random()*86)+1);
+insert into jouer_dans values(172, 86 , 46 , round(random()*86)+1);
+insert into jouer_dans values(173, 87 , 1  , round(random()*86)+1);
+insert into jouer_dans values(174, 87 , 13 , round(random()*86)+1);
+insert into jouer_dans values(175, 88 , 15 , round(random()*86)+1);
+insert into jouer_dans values(176, 88 , 17 , round(random()*86)+1);
+insert into jouer_dans values(177, 89 , 19 , round(random()*86)+1);
+insert into jouer_dans values(178, 89 , 22 , round(random()*86)+1);
+insert into jouer_dans values(179, 90 , 32 , round(random()*86)+1);
+insert into jouer_dans values(180, 90 , 34 , round(random()*86)+1);
+insert into jouer_dans values(181, 91 , 36 , round(random()*86)+1);
+insert into jouer_dans values(182, 91 , 38 , round(random()*86)+1);
+insert into jouer_dans values(183, 92 , 48 , round(random()*86)+1);
+insert into jouer_dans values(184, 92 , 54 , round(random()*86)+1);
+insert into jouer_dans values(185, 93 , 55 , round(random()*86)+1);
+insert into jouer_dans values(186, 93 , 58 , round(random()*86)+1);
+insert into jouer_dans values(187, 94 , 60 , round(random()*86)+1);
+insert into jouer_dans values(188, 94 , 62 , round(random()*86)+1);
+insert into jouer_dans values(189, 95 , 63 , round(random()*86)+1);
+insert into jouer_dans values(190, 95 , 70 , round(random()*86)+1);
+insert into jouer_dans values(191, 96 , 80 , round(random()*86)+1);
+insert into jouer_dans values(192, 96 , 83 , round(random()*86)+1);
+insert into jouer_dans values(193, 97 , 88 , round(random()*86)+1);
+insert into jouer_dans values(194, 97 , 95 , round(random()*86)+1);
+insert into jouer_dans values(195, 98 , 110, round(random()*86)+1);
+insert into jouer_dans values(196, 98 , 111, round(random()*86)+1);
+insert into jouer_dans values(197, 99 , 113, round(random()*86)+1);
+insert into jouer_dans values(198, 99 , 101, round(random()*86)+1);
+insert into jouer_dans values(199, 100, 103, round(random()*86)+1);
+insert into jouer_dans values(200, 100, 116, round(random()*86)+1);
+insert into jouer_dans values(201, 101, 117, round(random()*86)+1);
+insert into jouer_dans values(202, 101, 125, round(random()*86)+1);
+insert into jouer_dans values(203, 102, 126, round(random()*86)+1);
+insert into jouer_dans values(204, 102, 129, round(random()*86)+1);
+insert into jouer_dans values(205, 103, 130, round(random()*86)+1);
+insert into jouer_dans values(206, 103, 132, round(random()*86)+1);
+insert into jouer_dans values(207, 104, 134, round(random()*86)+1);
+insert into jouer_dans values(208, 104, 135, round(random()*86)+1);
+insert into jouer_dans values(209, 105, 137, round(random()*86)+1);
+insert into jouer_dans values(210, 105, 139, round(random()*86)+1);
+insert into jouer_dans values(211, 106, 143, round(random()*86)+1);
+insert into jouer_dans values(212, 106, 144, round(random()*86)+1);
+insert into jouer_dans values(213, 107, 116, round(random()*86)+1);
+insert into jouer_dans values(214, 107, 116, round(random()*86)+1);
+insert into jouer_dans values(215, 108, 120, round(random()*86)+1);
+insert into jouer_dans values(216, 108, 8  , round(random()*86)+1);
+insert into jouer_dans values(217, 109, 12 , round(random()*86)+1);
+insert into jouer_dans values(218, 109, 84 , round(random()*86)+1);
+insert into jouer_dans values(219, 110, 54 , round(random()*86)+1);
+insert into jouer_dans values(220, 110, 57 , round(random()*86)+1);
+insert into jouer_dans values(221, 111, 14 , round(random()*86)+1);
+insert into jouer_dans values(222, 111, 2  , round(random()*86)+1);
+insert into jouer_dans values(223, 112, 26 , round(random()*86)+1);
+insert into jouer_dans values(224, 112, 27 , round(random()*86)+1);
+insert into jouer_dans values(225, 113, 29 , round(random()*86)+1);
+insert into jouer_dans values(226, 113, 39 , round(random()*86)+1);
+insert into jouer_dans values(227, 114, 127, round(random()*86)+1);
+insert into jouer_dans values(228, 114, 2  , round(random()*86)+1);
+insert into jouer_dans values(229, 115, 46 , round(random()*86)+1);
+insert into jouer_dans values(230, 115, 52 , round(random()*86)+1);
+insert into jouer_dans values(231, 116, 71 , round(random()*86)+1);
+insert into jouer_dans values(232, 116, 128, round(random()*86)+1);
+insert into jouer_dans values(233, 117, 20 , round(random()*86)+1);
+insert into jouer_dans values(234, 117, 37 , round(random()*86)+1);
+insert into jouer_dans values(235, 118, 49 , round(random()*86)+1);
+insert into jouer_dans values(236, 118, 58 , round(random()*86)+1);
+insert into jouer_dans values(237, 119, 69 , round(random()*86)+1);
+insert into jouer_dans values(238, 119, 22 , round(random()*86)+1);
+insert into jouer_dans values(239, 120, 10 , round(random()*86)+1);
+insert into jouer_dans values(240, 120, 13 , round(random()*86)+1);
 
 --- Historique personne ---
 create or replace function op_personne()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table personne dans la table historique.
+*/
 
 declare
     id integer;
@@ -1255,6 +1257,10 @@ execute procedure op_personne();
 create or replace function op_personnage()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table personnage dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -1295,6 +1301,10 @@ execute procedure op_personnage();
 --- Historique jouer_dans ---
 create or replace function op_jouer_dans()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table jouer_dans dans la table historique.
+*/
 
 declare
     id integer;
@@ -1337,6 +1347,10 @@ execute procedure op_jouer_dans();
 create or replace function op_franchise()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table franchise dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -1378,6 +1392,10 @@ execute procedure op_franchise();
 create or replace function op_carte()
 returns trigger as $$
 
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table carte dans la table historique.
+*/
+
 declare
     id integer;
 
@@ -1418,6 +1436,10 @@ execute procedure op_carte();
 --- Historique combat ---
 create or replace function op_combat()
 returns trigger as $$
+
+/* 
+    Cette fonction permet de "sauvegarder" les commandes faites sur la table combat dans la table historique.
+*/
 
 declare
     id integer;
