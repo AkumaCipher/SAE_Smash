@@ -1,5 +1,11 @@
 # <span style="color:lightcoral"> Smash'Em All! </span>
 
+## <span style="color:red"> Les liens pour les tutos youtube !! </span>
+La playlist : **https://www.youtube.com/playlist?list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU** <br>
+La premier vidéo (présentation) : **https://www.youtube.com/watch?v=DdNrAtMWKS4&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=1** <br>
+La deuxième vidéo (installation windows) : **https://www.youtube.com/watch?v=uvLkZR0PqMw&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=2** <br>
+La dernière vidéo (installation linus) : **https://www.youtube.com/watch?v=0Ranzzn4QDA&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=3**
+
 Pour la SAE 2.4 de l'IUT, nous avons décidé de proposer une structure accueillant des combats compétitifs sur le jeu **Super Smash Bros. Ultimate**. <br>
 Ce jeu de combat propose un total de *86* personnages jouables issus de *40* franchises mondialement connues.
 Notre structure permet aux joueurs le souhaitant, de se mettre en relation et de jouer un match (1v1) contre un autre joueur.

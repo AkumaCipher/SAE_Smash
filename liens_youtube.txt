@@ -1,0 +1,4 @@
+La playlist : https://www.youtube.com/playlist?list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU
+La premier vidéo (présentation) : https://www.youtube.com/watch?v=DdNrAtMWKS4&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=1
+La deuxième vidéo (installation windows) : https://www.youtube.com/watch?v=uvLkZR0PqMw&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=2
+La dernière vidéo (installation linus) : https://www.youtube.com/watch?v=0Ranzzn4QDA&list=PLutK9b63SfeTHoHcGrMLkiHuxf7r-7ZIU&index=3
